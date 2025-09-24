@@ -17,8 +17,27 @@ This application provides a simple REST API that connects your existing systems 
 - ✅ **Comprehensive Debugging** - Detailed logging throughout request flow
 - ✅ **Form Submission Working** - Test UI successfully submits to EPP portal
 - ✅ **Error Handling Enhanced** - Detailed error messages and stack traces
+- ✅ **Code Quality Compliant** - SonarQube validated, accessibility standards met
 
 **Tech Stack:** Java 17, Spring Boot 3.2.5, Maven, H2/Oracle, Flyway
+
+---
+
+## 📚 Documentation & Guides
+
+### Quick Start Guides
+- **[RUNNER_GUIDE.md](RUNNER_GUIDE.md)** - Build, run, and deploy the application
+- **[STARTUP_GUIDE.md](STARTUP_GUIDE.md)** - Complete setup and configuration guide
+- **[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)** - Integrate into existing systems
+
+### Git & Development
+- **[GIT_GITLAB_GUIDE.md](GIT_GITLAB_GUIDE.md)** - Git operations and GitLab workflow
+- **[GITLAB_BRANCH_GUIDE.md](GITLAB_BRANCH_GUIDE.md)** - Branch management and merge requests
+- **[AGENT_PROMPTS.md](AGENT_PROMPTS.md)** - Copy-paste prompts for AI assistance
+
+### Technical Documentation
+- **[API_REFERENCE.md](API_REFERENCE.md)** - REST API endpoints and usage
+- **[REFACTORING_SUMMARY.md](REFACTORING_SUMMARY.md)** - Architecture changes and improvements
 
 ---
 

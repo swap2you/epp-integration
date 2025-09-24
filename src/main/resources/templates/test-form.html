@@ -1,6 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="RUC EPP Payment Test Form - Integration testing for Pennsylvania Electronic Payment Platform">
     <title>RUC EPP Test - Simple UI</title>
     <style>
         body {
@@ -69,6 +72,42 @@
             border-radius: 4px;
             margin-bottom: 20px;
         }
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .test-buttons {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .test-btn-primary {
+            background-color: #17a2b8;
+            margin-right: 10px;
+        }
+        .test-btn-secondary {
+            background-color: #6c757d;
+        }
+        .test-results {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        .test-results.loading {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .test-results.success {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        .test-results.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
     </style>
 </head>
 <body>
@@ -80,51 +119,51 @@
         </div>
 
         <!-- Error display -->
-        <div th:if="${error}" style="background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+        <div th:if="${error}" class="error-message">
             <strong>Error:</strong> <span th:text="${error}"></span>
         </div>
 
         <form action="/test/submit" method="post">
             
             <div class="form-group">
-                <label>Application Code (RUC):</label>
-                <input type="text" name="applicationCode" th:value="${applicationCode}"  class="readonly">
+                <label for="applicationCode">Application Code (RUC):</label>
+                <input type="text" id="applicationCode" name="applicationCode" th:value="${applicationCode}" class="readonly">
             </div>
 
             <div class="form-group">
-                <label>Order Key:</label>
-                <input type="text" name="orderKey" th:value="${orderKey}" required>
+                <label for="orderKey">Order Key:</label>
+                <input type="text" id="orderKey" name="orderKey" th:value="${orderKey}" required>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label>First Name:</label>
-                    <input type="text" name="firstName" th:value="${firstName}" required>
+                    <label for="firstName">First Name:</label>
+                    <input type="text" id="firstName" name="firstName" th:value="${firstName}" required>
                 </div>
                 <div class="form-group">
-                    <label>Last Name:</label>
-                    <input type="text" name="lastName" th:value="${lastName}" required>
+                    <label for="lastName">Last Name:</label>
+                    <input type="text" id="lastName" name="lastName" th:value="${lastName}" required>
                 </div>
             </div>
 
             <div class="form-group">
-                <label>Address:</label>
-                <input type="text" name="address1" th:value="${address1}" required>
+                <label for="address1">Address:</label>
+                <input type="text" id="address1" name="address1" th:value="${address1}" required>
             </div>
 
             <div class="form-group">
-                <label>Address 2 (Optional):</label>
-                <input type="text" name="address2" value="">
+                <label for="address2">Address 2 (Optional):</label>
+                <input type="text" id="address2" name="address2" value="">
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label>City:</label>
-                    <input type="text" name="city" th:value="${city}" required>
+                    <label for="city">City:</label>
+                    <input type="text" id="city" name="city" th:value="${city}" required>
                 </div>
                 <div class="form-group">
-                    <label>State:</label>
-                    <select name="stateCode" required>
+                    <label for="stateCode">State:</label>
+                    <select id="stateCode" name="stateCode" required title="Select a state">
                         <option value="PA" selected>PA - Pennsylvania</option>
                         <option value="NJ">NJ - New Jersey</option>
                         <option value="NY">NY - New York</option>
@@ -134,35 +173,35 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label>ZIP Code:</label>
-                    <input type="text" name="zipCode" th:value="${zipCode}" required>
+                    <label for="zipCode">ZIP Code:</label>
+                    <input type="text" id="zipCode" name="zipCode" th:value="${zipCode}" required>
                 </div>
                 <div class="form-group">
-                    <label>Email:</label>
-                    <input type="email" name="email" th:value="${email}" required>
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" th:value="${email}" required>
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label>Amount ($):</label>
-                    <input type="number" name="amount" th:value="${amount}" step="0.01" min="0.01" required>
+                    <label for="amount">Amount ($):</label>
+                    <input type="number" id="amount" name="amount" th:value="${amount}" step="0.01" min="0.01" required>
                 </div>
                 <div class="form-group">
-                    <label>Description:</label>
-                    <input type="text" name="description" th:value="${description}" required>
+                    <label for="description">Description:</label>
+                    <input type="text" id="description" name="description" th:value="${description}" required>
                 </div>
             </div>
 
             <button type="submit">Submit Payment & Go to EPP</button>
         </form>
         
-        <div style="margin-top: 20px; text-align: center;">
-            <button type="button" onclick="testPing()" style="background-color: #17a2b8; margin-right: 10px;">Test Ping</button>
-            <button type="button" onclick="testControllerPing()" style="background-color: #6c757d;">Test UI Controller</button>
+        <div class="test-buttons">
+            <button type="button" onclick="testPing()" class="test-btn-primary">Test Ping</button>
+            <button type="button" onclick="testControllerPing()" class="test-btn-secondary">Test UI Controller</button>
         </div>
         
-        <div id="testResults" style="margin-top: 15px; padding: 10px; border-radius: 4px; display: none;"></div>
+        <div id="testResults" class="test-results"></div>
     </div>
 
     <script>
