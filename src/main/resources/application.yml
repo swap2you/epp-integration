@@ -1,0 +1,121 @@
+spring:
+  application:
+    name: rucApi
+  main:
+    banner-mode: console
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+ruc:
+  payments:
+    provider: epp
+    # RUC-specific Application Code (provided by EPP team)
+    applicationCode: ${EPP_APPLICATION_CODE:3256d54a-9e63-4c7d-b2f9-a2897ec82aab}
+    appCode: ${EPP_APP_CODE:3256d54a-9e63-4c7d-b2f9-a2897ec82aab} # Legacy field for backward compatibility
+    # EPP Payment Gateway URLs as per specification
+    paymentGatewayUrl: ${EPP_PAYMENT_URL:https://epp.beta.pa.gov/Payment/Create}
+    paymentGatewayAPI: ${EPP_API_URL:https://epp.API.beta.pa.gov}
+    # Legacy URLs for backward compatibility
+    paymentGatewayIndexUrl: ${EPP_INDEX_URL:https://epp.beta.pa.gov/Payment/Index}
+    paymentGatewayApiUrl: ${EPP_API_URL:https://epp.API.beta.pa.gov}
+    # RUC callback URLs per environment
+    returnUrl: ${EPP_RETURN_URL:https://roaduserchargedev.penndot.pa.gov/rucapi/public/epp/result}
+    environment: ${EPP_ENV:UAT}
+    # Merchant ID (confirmed with EPP team)
+    merchantId: ${EPP_MERCHANT_ID:235188073995}
+    # Security settings
+    hashAlgorithm: ${EPP_HASH_ALGORITHM:SHA512}
+    encryptionEnabled: ${EPP_ENCRYPTION:false}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    driver-class-name: oracle.jdbc.OracleDriver
+    url: jdbc:oracle:thin:@exacc-pd-hwy-dev-scan.pa.lcl:1521/MBUFDV.pa.lcl
+    username: mbuf_dev
+    password: ${ORACLE_PASSWORD:CHANGE_ME}
+    hikari:
+      minimum-idle: 2
+      maximum-pool-size: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  jpa:
+    database-platform: org.hibernate.dialect.Oracle12cDialect
+
+ruc:
+  payments:
+    returnUrl: https://roaduserchargedev.penndot.pa.gov/rucapi/public/epp/result
+    environment: DEV
+
+---
+spring:
+  config:
+    activate:
+      on-profile: uat
+  datasource:
+    driver-class-name: oracle.jdbc.OracleDriver
+    url: jdbc:oracle:thin:@exacc-pd-hwy-uat-scan.pa.lcl:1521/MBUFUAT.pa.lcl
+    username: mbuf_uat
+    password: ${ORACLE_PASSWORD:CHANGE_ME}
+    hikari:
+      minimum-idle: 2
+      maximum-pool-size: 10
+
+ruc:
+  payments:
+    returnUrl: https://roaduserchargeuat.penndot.pa.gov/rucapi/public/epp/result
+    environment: UAT
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    driver-class-name: oracle.jdbc.OracleDriver
+    url: jdbc:oracle:thin:@exacc-pd-hwy-prod-scan.pa.lcl:1521/MBUFPROD.pa.lcl
+    username: mbuf_prod
+    password: ${ORACLE_PASSWORD:CHANGE_ME}
+
+ruc:
+  payments:
+    # Production EPP URLs as per specification
+    paymentGatewayUrl: https://epp.pa.gov/Payment/Create
+    paymentGatewayAPI: https://epp.API.pa.gov
+    # Legacy URLs for backward compatibility
+    paymentGatewayIndexUrl: https://epp.pa.gov/Payment/Index
+    paymentGatewayApiUrl: https://epp.API.pa.gov
+    returnUrl: https://roadusercharge.penndot.pa.gov/rucapi/public/epp/result
+    environment: PROD
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:ruc;MODE=Oracle;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false
+    username: sa
+    password: sa
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+  flyway:
+    enabled: true

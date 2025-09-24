@@ -1,0 +1,67 @@
+{
+  "info": {
+    "name": "RUC_EPP",
+    "_postman_id": "epp-collection-001",
+    "description": "RUC EPP Integration API - Road User Charge Payment Processing",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Start EPP Payment",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"orderKey\": \"RUC123\",\n  \"applicationUniqueId\": \"APP456\",\n  \"amount\": 25.00,\n  \"email\": \"driver@example.com\",\n  \"items\": [\n    { \"itemCode\": \"RUC_FEE\", \"description\": \"Road User Charge\", \"amount\": 25.00 }\n  ]\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/payments/epp/start",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["payments", "epp", "start"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "EPP Callback",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"orderKey\": \"RUC123\",\n  \"applicationUniqueId\": \"APP456\",\n  \"status\": \"COM\",\n  \"authCode\": \"AUTH789\",\n  \"referenceNo\": \"REF123\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/payments/epp/result",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["payments", "epp", "result"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/payments/epp/ping",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["payments", "epp", "ping"]
+        }
+      },
+      "response": []
+    }
+  ]
+}
