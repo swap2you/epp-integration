@@ -3,18 +3,23 @@ package com.ruk.payments.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruk.payments.dto.SaleDetails;
 import com.ruk.payments.dto.SaleItems;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Arrays;
 
 /**
  * Simple UI controller for EPP testing.
  * Serves HTML forms and handles submissions without CORS issues.
+ * 
+ * Supports both Spring template-based and direct .NET-style response approaches.
  */
 @Controller
 @RequestMapping("/test")
@@ -22,6 +27,10 @@ public class TestUIController {
     
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    
+    // Toggle between Spring template approach (false) and direct .NET-style response (true)
+    @Value("${epp.test.use-direct-response:false}")
+    private boolean useDirectResponse;
     
     public TestUIController() {
         System.out.println("🏗️ TestUIController CONSTRUCTOR called!");
@@ -68,6 +77,7 @@ public class TestUIController {
     
     /**
      * Handle form submission and redirect to EPP.
+     * Supports both Spring template approach and direct .NET-style response.
      */
     @PostMapping("/submit")
     public String submitTest(
@@ -83,7 +93,8 @@ public class TestUIController {
             @RequestParam("email") String email,
             @RequestParam("amount") String amount,
             @RequestParam("description") String description,
-            Model model) {
+            Model model,
+            HttpServletResponse response) throws IOException {
         
         System.out.println("==========================================================");
         System.out.println("🚀 SUBMIT ENDPOINT HIT! /test/submit");
@@ -155,17 +166,17 @@ public class TestUIController {
             HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
             
             System.out.println("⏳ Making HTTP POST request...");
-            ResponseEntity<String> response = restTemplate.postForEntity(
+            ResponseEntity<String> httpResponse = restTemplate.postForEntity(
                 "http://localhost:8080/payments/epp/start", 
                 request, 
                 String.class
             );
             
             System.out.println("✅ HTTP Response received!");
-            System.out.println("📊 Response Status: " + response.getStatusCode());
-            System.out.println("📋 Response Headers: " + response.getHeaders());
+            System.out.println("📊 Response Status: " + httpResponse.getStatusCode());
+            System.out.println("📋 Response Headers: " + httpResponse.getHeaders());
             
-            String eppForm = response.getBody();
+            String eppForm = httpResponse.getBody();
             System.out.println("📄 EPP Form HTML length: " + (eppForm != null ? eppForm.length() : 0));
             if (eppForm != null && eppForm.length() > 0) {
                 System.out.println("🎯 EPP Form Preview (first 200 chars): " + 
@@ -173,9 +184,14 @@ public class TestUIController {
             }
             System.out.println("EPP Form generated successfully, length: " + (eppForm != null ? eppForm.length() : 0));
             
-            // Add the EPP form to model and return redirect template
-            model.addAttribute("eppForm", eppForm);
-            return "epp-redirect";
+            // Toggle between approaches based on configuration
+            if (useDirectResponse) {
+                // .NET-style approach: Direct response writing
+                return handleDirectResponse(eppForm, response);
+            } else {
+                // Spring template approach: Use Thymeleaf template
+                return handleTemplateResponse(eppForm, model);
+            }
             
         } catch (Exception e) {
             System.err.println("=== ERROR IN TEST UI SUBMISSION ===");
@@ -199,5 +215,37 @@ public class TestUIController {
             
             return "test-form";
         }
+    }
+
+    /**
+     * Handle direct response approach (.NET-style).
+     * Writes HTML directly to the HTTP response, similar to .NET HttpContext.Response.WriteAsync.
+     */
+    private String handleDirectResponse(String eppForm, HttpServletResponse response) throws IOException {
+        System.out.println("🔧 Using DIRECT RESPONSE approach (.NET-style)");
+        
+        // Set content type exactly like .NET: "text/html; charset=UTF-8"
+        response.setContentType("text/html; charset=UTF-8");
+        
+        // Write HTML directly to response (like .NET HttpContext.Response.WriteAsync)
+        response.getWriter().write(eppForm);
+        response.getWriter().flush();
+        
+        System.out.println("✅ HTML written directly to response");
+        return null; // Return null to indicate we handled the response directly
+    }
+
+    /**
+     * Handle template response approach (Spring-style).
+     * Uses Thymeleaf template to render the form.
+     */
+    private String handleTemplateResponse(String eppForm, Model model) {
+        System.out.println("🔧 Using TEMPLATE RESPONSE approach (Spring-style)");
+        
+        // Add the EPP form to model for template rendering
+        model.addAttribute("eppForm", eppForm);
+        
+        System.out.println("✅ EPP form added to model for template rendering");
+        return "epp-redirect"; // Return template name
     }
 }

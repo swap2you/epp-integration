@@ -1,53 +1,111 @@
-- [x] Clarify Project Requirements
-- [x] Scaffold the Project
-- [x] Customize the Project
-- [x] Install Required Extensions
-- [x] Compile the Project
-- [x] Create and Run Task
-- [x] Launch the Project
-- [x] Ensure Documentation is Complete
-- [x] Fix Build Issues
-- [x] Configure Java 17 Environment
-- [x] Clean Up Project Structure
-- [x] Remove Unnecessary Files and Methods
-- [x] Add Comprehensive Documentation
-- [x] Create Simple Integration Guide
-- [x] Update All Documentation
-- [x] Resolve Flyway Migration Conflicts
-- [x] Fix Oracle Dialect Configuration
-- [x] Update Documentation
-- [x] Refactor to Clean Architecture
-- [x] Implement Service Layer Separation
-- [x] Create Comprehensive Documentation
-- [x] **FIX VALIDATION CONSTRAINTS - ApplicationCode Field**
-- [x] **UPDATE APPLICATION CODE TO UUID FORMAT**
-- [x] **VERIFY EPP SPECIFICATION COMPLIANCE**
-- [x] **COMPLETE POSTMAN TESTING VALIDATION**
-- [x] **IMPLEMENT COMMERCE HUB COMPLIANCE** - Rahul's field requirements
-- [x] **FIX COMMERCE HUB VALIDATION** - applicationUniqueId optional
+# EPP Integration - AI Coding Agent Instructions
 
-# RUC EPP Integration - Production Ready with Clean Architecture & Commerce Hub Compliance
+## Project Architecture Overview
 
-The RUC (Road User Charge) EPP Integration API has been completely refactored with clean architecture principles, **FIXED VALIDATION ISSUES**, **COMMERCE HUB COMPLIANT WITH VALIDATION FIX**, and is production-ready with full EPP compliance.
+This is a **Spring Boot 3.2.5 + Java 17** EPP (Electronic Payment Platform) integration API with **Clean Architecture** principles, designed for Pennsylvania's Road User Charge (RUC) payment processing.
 
-## Current Status
-- ✅ Java 17 environment configured
-- ✅ Spring Boot 3.2.5 with H2 test profile working
-- ✅ Oracle 12c local profile configured
-- ✅ Profile-specific database configurations isolated
-- ✅ Flyway migrations properly organized
-- ✅ Build process clean and error-free
-- ✅ API endpoints functional
-- ✅ **CLEAN ARCHITECTURE IMPLEMENTED**
-- ✅ **SERVICE LAYER WITH ALL BUSINESS LOGIC**
-- ✅ **CONTROLLERS ARE MINIMAL AND CLEAN**
-- ✅ **COMPREHENSIVE UTILITY LAYER**
-- ✅ **PROPER EXCEPTION HANDLING**
-- ✅ **COMPLETE INTEGRATION DOCUMENTATION**
-- ✅ **VALIDATION CONSTRAINTS FIXED** - ApplicationCode field supports UUID format (50 chars)
-- ✅ **APPLICATION CODE UPDATED** - `3256d54a-9e63-4c7d-b2f9-a2897ec82aab`
-- ✅ **EPP SPECIFICATION COMPLIANT** - All Pennsylvania EPP requirements implemented
-- ✅ **POSTMAN TESTING VERIFIED** - Complete working payloads provided and tested
+### Core Architecture Patterns
+
+**Clean Architecture Layers:**
+- `controller/` - Thin HTTP controllers, minimal business logic
+- `service/` - Business logic and transaction management  
+- `repo/` - Data access layer with Spring Data JPA
+- `dto/` - Data transfer objects for API boundaries
+- `entity/` - JPA entities with proper database mapping
+- `exception/` - Custom exceptions with error codes
+- `util/` - Reusable utilities and helpers
+- `config/` - Spring configuration and properties
+
+**Key Design Decisions:**
+- Controllers delegate ALL business logic to services
+- Services contain transaction boundaries and orchestration
+- EppClient handles direct EPP system integration
+- PaymentService orchestrates the payment workflow
+- Repository layer uses Spring Data JPA conventions
+
+### Critical Developer Workflows
+
+**Build & Run Commands:**
+```powershell
+# Same terminal session required - do not switch terminals
+$env:JAVA_HOME="C:\Program Files\Java\jdk-17.0.12"
+$env:SPRING_PROFILES_ACTIVE="test"  # or "local" for Oracle
+mvn clean spring-boot:run
+```
+
+**Database Profiles:**
+- `test` profile: H2 in-memory (migrations: `db/migration/h2/`)  
+- `local` profile: Oracle 12c (migrations: `db/migration/`)
+- Flyway manages all schema changes - never modify entities for DDL
+
+**Testing Workflow:**
+- UI Test Form: http://localhost:8080/test/form
+- Health Check: http://localhost:8080/payments/epp/ping → "pong"
+- Debug JSON: POST to `/payments/epp/debug-json`
+
+### Project-Specific Conventions
+
+**EPP Integration Pattern:**
+1. `TestUIController` → calls `PaymentController.start()` 
+2. `PaymentService.initiatePayment()` → orchestrates business logic
+3. `EppClient.buildHostedCheckoutForm()` → generates HTML form
+4. **Toggle Feature**: Supports both Spring template and .NET-style direct response
+
+**HTML Form Submission Toggle:**
+```yaml
+# application.yml
+epp:
+  test:
+    use-direct-response: false  # false=Spring template, true=.NET-style
+```
+
+**Response Approaches:**
+- `useDirectResponse: false` → Uses `epp-redirect.html` Thymeleaf template
+- `useDirectResponse: true` → Writes HTML directly to HttpServletResponse (like .NET)
+
+**EPP-Specific Data Flow:**
+- `SaleDetails` → JSON → Encrypted payload → HTML form → Auto-submit to EPP
+- Return URL: EPP calls `/payments/epp/OnEPPResult` with payment status
+- Status handling: "COM" (complete), "CAN" (cancelled), "DEC" (declined)
+
+### Integration Points & Dependencies
+
+**External Systems:**
+- Pennsylvania EPP Commerce Hub (payment gateway)
+- Oracle Database (production) / H2 (testing)
+- Spring Boot DevTools (development)
+
+**Cross-Component Communication:**
+- Controllers → Services (dependency injection)
+- Services → EppClient (EPP system integration)  
+- EppClient → EppTransactionRepository (persistence)
+- All HTTP calls use RestTemplate with proper error handling
+
+**Configuration Management:**
+- `EppProperties` class manages all EPP-related configuration
+- Profile-specific YAML files for environment isolation
+- Environment variables for sensitive data (EPP_APPLICATION_CODE, etc.)
+
+### Critical Implementation Details
+
+**EPP Payload Format:**
+- ApplicationCode: UUID format (50 chars max)
+- OrderKey: Must be unique per transaction
+- Items array: Required even for single items
+- Auto-populated fields: itemKey = orderKey, timestamps
+
+**Error Handling Pattern:**
+- Custom `PaymentProcessingException` with error codes
+- Controllers return appropriate HTTP status codes
+- All exceptions logged with transaction context
+
+**Security & Validation:**
+- Bean Validation (@Valid) on all DTOs
+- HTML escaping in EPP form generation  
+- Transaction idempotency in EppClient
+- CORS configuration for test UI integration
+
+This codebase follows Spring Boot conventions but with EPP-specific adaptations for Pennsylvania's payment system requirements.
 - ✅ **PRODUCTION TESTING READY** - Application running successfully on port 8080
 - ✅ **COMMERCE HUB COMPLIANT** - Rahul's field requirements implemented
 - ✅ **NULLABLE FIELD SUPPORT** - saleDetailId and saleItemId can be null

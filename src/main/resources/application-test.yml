@@ -1,4 +1,4 @@
-## Test profile for H2 database
+# Test profile for H2 database
 spring:
   flyway:
     locations: classpath:db/migration/h2
@@ -8,3 +8,8 @@ spring:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: none
+
+# EPP Test Configuration
+epp:
+  test:
+    use-direct-response: true  # false = Spring template (default), true = .NET-style direct response

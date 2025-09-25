@@ -119,3 +119,8 @@ spring:
     database-platform: org.hibernate.dialect.H2Dialect
   flyway:
     enabled: true
+
+# EPP Test Configuration  
+epp:
+  test:
+    use-direct-response: false  # false = Spring template (default), true = .NET-style direct response

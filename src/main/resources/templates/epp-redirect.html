@@ -38,9 +38,21 @@
         <div class="spinner"></div>
         <h2>🚀 Redirecting to EPP Commerce Hub...</h2>
         <p>Please wait while we redirect you to the payment page.</p>
+        <p><small>Using Spring Template Approach</small></p>
     </div>
 
     <!-- The EPP form will be injected here and auto-submit -->
     <div th:utext="${eppForm}"></div>
+    
+    <script>
+        // Ensure auto-submit happens after page load
+        window.addEventListener('load', function() {
+            const forms = document.forms;
+            if (forms.length > 0) {
+                console.log('Auto-submitting EPP form...');
+                forms[0].submit();
+            }
+        });
+    </script>
 </body>
 </html>

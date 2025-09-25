@@ -59,7 +59,7 @@ public class EppClient {
         StringBuilder sb = new StringBuilder();
         sb.append("<html><body onload='document.forms[0].submit()'>")
           .append("<form method='POST' action='").append(eppProperties.getPaymentGatewayIndexUrl()).append("'>")
-          .append("<input type='hidden' name='payload' value='").append(escapeHtml(encryptedPayload)).append("'/>")
+          .append("<input type='hidden' name='saleDetail' value='").append(escapeHtml(encryptedPayload)).append("'/>")
           .append("</form></body></html>");
         return sb.toString();
     }
