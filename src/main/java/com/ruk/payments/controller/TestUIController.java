@@ -1,16 +1,21 @@
 package com.ruk.payments.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ruk.payments.config.EppProperties;
 import com.ruk.payments.dto.SaleDetails;
 import com.ruk.payments.dto.SaleItems;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.servlet.ModelAndView;
 
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -27,16 +32,18 @@ public class TestUIController {
     
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final EppProperties eppProperties;
     
     // Toggle between Spring template approach (false) and direct .NET-style response (true)
     @Value("${epp.test.use-direct-response:false}")
     private boolean useDirectResponse;
     
-    public TestUIController() {
+    public TestUIController(EppProperties eppProperties) {
         System.out.println("🏗️ TestUIController CONSTRUCTOR called!");
         this.restTemplate = new RestTemplate();
         this.objectMapper = new ObjectMapper();
-        System.out.println("✅ TestUIController initialized with RestTemplate and ObjectMapper");
+        this.eppProperties = eppProperties;
+        System.out.println("✅ TestUIController initialized with RestTemplate, ObjectMapper, and EppProperties");
     }
     
     /**
@@ -93,8 +100,7 @@ public class TestUIController {
             @RequestParam("email") String email,
             @RequestParam("amount") String amount,
             @RequestParam("description") String description,
-            Model model,
-            HttpServletResponse response) throws IOException {
+        Model model) throws IOException {
         
         System.out.println("==========================================================");
         System.out.println("🚀 SUBMIT ENDPOINT HIT! /test/submit");
@@ -157,7 +163,7 @@ public class TestUIController {
             // use text/html content type (EPP endpoint now supports both)
             headers.setContentType(MediaType.parseMediaType("text/html; charset=UTF-8"));
             headers.setAccept(Arrays.asList(MediaType.TEXT_HTML));
-            System.out.println("📋 Content-Type: text/html; charset=UTF-8 (as requested by Rahul)");
+            System.out.println("📋 Content-Type: text/html; charset=UTF-8");
 
             String requestBody = objectMapper.writeValueAsString(saleDetails);
             System.out.println("📤 JSON Request Body: " + requestBody);
@@ -178,6 +184,11 @@ public class TestUIController {
             
             String eppForm = httpResponse.getBody();
             System.out.println("📄 EPP Form HTML length: " + (eppForm != null ? eppForm.length() : 0));
+
+            System.out.println("------------------ EPP FORM -------------------------------------");
+            System.out.println(eppForm);
+            System.out.println("-----------------------------------------------------------------");
+
             if (eppForm != null && eppForm.length() > 0) {
                 System.out.println("🎯 EPP Form Preview (first 200 chars): " + 
                     (eppForm.length() > 200 ? eppForm.substring(0, 200) + "..." : eppForm));
@@ -185,13 +196,9 @@ public class TestUIController {
             System.out.println("EPP Form generated successfully, length: " + (eppForm != null ? eppForm.length() : 0));
             
             // Toggle between approaches based on configuration
-            if (useDirectResponse) {
-                // .NET-style approach: Direct response writing
-                return handleDirectResponse(eppForm, response);
-            } else {
-                // Spring template approach: Use Thymeleaf template
-                return handleTemplateResponse(eppForm, model);
-            }
+            // Always return a view name to avoid 404s from null returns
+            // If direct-response is toggled on, we still use the template to render the HTML safely.
+            return handleTemplateResponse(eppForm, model);
             
         } catch (Exception e) {
             System.err.println("=== ERROR IN TEST UI SUBMISSION ===");
@@ -218,21 +225,13 @@ public class TestUIController {
     }
 
     /**
-     * Handle direct response approach (.NET-style).
-     * Writes HTML directly to the HTTP response, similar to .NET HttpContext.Response.WriteAsync.
+     * Handle direct response approach (.NET-style) without returning null.
+     * To avoid 404 Whitelabel issues, we route through the Thymeleaf template instead of writing directly.
      */
-    private String handleDirectResponse(String eppForm, HttpServletResponse response) throws IOException {
-        System.out.println("🔧 Using DIRECT RESPONSE approach (.NET-style)");
-        
-        // Set content type exactly like .NET: "text/html; charset=UTF-8"
-        response.setContentType("text/html; charset=UTF-8");
-        
-        // Write HTML directly to response (like .NET HttpContext.Response.WriteAsync)
-        response.getWriter().write(eppForm);
-        response.getWriter().flush();
-        
-        System.out.println("✅ HTML written directly to response");
-        return null; // Return null to indicate we handled the response directly
+    private String handleDirectResponse(String eppForm, Model model) {
+        System.out.println("🔧 Using DIRECT RESPONSE approach (.NET-style) via template to avoid 404");
+        model.addAttribute("eppForm", eppForm);
+        return "epp-redirect";
     }
 
     /**
@@ -247,5 +246,123 @@ public class TestUIController {
         
         System.out.println("✅ EPP form added to model for template rendering");
         return "epp-redirect"; // Return template name
+    }
+
+    /**
+     * Rahul's approach: Handle form submission using the old Java project pattern.
+     * This follows the EpgInvoke.htm pattern with ModelAndView and request attributes.
+     */
+    @PostMapping("/rahul-submit")
+    public ModelAndView rahulSubmitTest(
+            @RequestParam("applicationCode") String applicationCode,
+            @RequestParam("orderKey") String orderKey,
+            @RequestParam("firstName") String firstName,
+            @RequestParam("lastName") String lastName,
+            @RequestParam("address1") String address1,
+            @RequestParam(value = "address2", required = false) String address2,
+            @RequestParam("city") String city,
+            @RequestParam("stateCode") String stateCode,
+            @RequestParam("zipCode") String zipCode,
+            @RequestParam("email") String email,
+            @RequestParam("amount") String amount,
+            @RequestParam("description") String description,
+            HttpServletRequest request) throws Exception {
+        
+        System.out.println("==========================================================");
+        System.out.println("🎯 RAHUL'S METHOD ENDPOINT HIT! /test/rahul-submit");
+        System.out.println("==========================================================");
+        
+        // Build SaleDetails object (same as regular submit)
+        SaleDetails saleDetails = buildSaleDetails(applicationCode, orderKey, firstName, lastName, 
+                address1, address2, city, stateCode, zipCode, email, amount, description);
+        
+        // Rahul's approach: Get JSON for sale detail
+        String postData = getJSONForSaleDetail(saleDetails);
+        System.out.println("📄 JSON for EPG: " + postData);
+        
+        // Rahul's approach: Build the launch form string
+        String url = eppProperties.getPaymentGatewayIndexUrl(); // Use configured Gateway URL
+        String launchFormString = JSONBuildPostForm(url, postData);
+        System.out.println("🚀 Launch Form String: " + launchFormString);
+        
+        // Rahul's approach: Set as request attribute
+        request.setAttribute("EPG_GATEWAY_LAUNCH_FORM", launchFormString);
+        System.out.println("✅ EPG_GATEWAY_LAUNCH_FORM attribute set for EpgInvoke template");
+        
+        // Return ModelAndView for EpgInvoke template (following Rahul's pattern)
+        return new ModelAndView("EpgInvoke");
+    }
+
+    /**
+     * Helper method: Get JSON for sale detail (Rahul's EPGHelper.getJSONForSaleDetail equivalent)
+     */
+    private String getJSONForSaleDetail(SaleDetails saleDetails) throws Exception {
+        return objectMapper.writeValueAsString(saleDetails);
+    }
+
+    /**
+     * Helper method: Build POST form from JSON data (Rahul's EPGHelper.JSONBuildPostForm equivalent)
+     */
+    private String JSONBuildPostForm(String url, String jsonPostData) {
+        System.out.println("🔧 Building POST form using Rahul's JSONBuildPostForm approach");
+        
+        StringBuilder formBuilder = new StringBuilder();
+        formBuilder.append("<form id='__PostForm' name='__PostForm' action='").append(escapeForHtml(url)).append("' method='POST'>")
+                   .append("<input type='hidden' name='saleDetail' value='").append(escapeForHtml(jsonPostData)).append("'/>")
+                //    .append("<input type='hidden' name='returnUrl' value='").append(escapeForHtml(eppProperties.getReturnUrl())).append("'/>")
+                   .append("</form>")
+                   .append("<script language='javascript'>var v__PostForm=document.__PostForm;v__PostForm.submit();</script>");
+        
+        return formBuilder.toString();
+    }
+
+    /**
+     * Helper method: Build SaleDetails object (shared between both approaches)
+     */
+    private SaleDetails buildSaleDetails(String applicationCode, String orderKey, String firstName, String lastName,
+                                       String address1, String address2, String city, String stateCode, String zipCode,
+                                       String email, String amount, String description) {
+        System.out.println("🔨 Building SaleDetails object...");
+        
+        SaleDetails saleDetails = new SaleDetails();
+        saleDetails.setApplicationCode(applicationCode);
+        saleDetails.setOrderKey(orderKey);
+        saleDetails.setFirstName(firstName);
+        saleDetails.setLastName(lastName);
+        saleDetails.setAddress1(address1);
+        saleDetails.setAddress2(address2 != null ? address2 : "");
+        saleDetails.setCity(city);
+        saleDetails.setStateCode(stateCode);
+        saleDetails.setZipCode(zipCode);
+        saleDetails.setEmail(email);
+        saleDetails.setPaymentAccountType("CC");
+        
+        BigDecimal totalAmount = new BigDecimal(amount);
+        saleDetails.setTotalAmount(totalAmount);
+        
+        // Create sale item
+        SaleItems item = new SaleItems();
+        item.setCount(1);
+        item.setDescription(description);
+        item.setAmount(totalAmount);
+        item.setItemKey(orderKey);
+        
+        saleDetails.setItems(Arrays.asList(item));
+        
+        return saleDetails;
+    }
+
+    /**
+     * Helper method: Escape HTML for form values
+     */
+    private String escapeForHtml(String value) {
+        if (value == null) return "";
+        // return value
+        //         .replace("&", "&amp;")
+        //         .replace("\"", "&quot;")
+        //         .replace("'", "&#39;")
+        //         .replace("<", "&lt;")
+        //         .replace(">", "&gt;");
+        return value;
     }
 }

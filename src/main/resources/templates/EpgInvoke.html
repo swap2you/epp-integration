@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPG Invoke - Rahul's Method</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .loading {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            display: inline-block;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #ffffff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .method-badge {
+            background: rgba(40, 167, 69, 0.8);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading">
+        <div class="method-badge">🎯 Rahul's Java Route Method</div>
+        <div class="spinner"></div>
+        <h2>🚀 Redirecting to EPP Commerce Hub...</h2>
+        <p>Using Rahul's proven ModelAndView approach</p>
+        <p><small>EpgInvoke.htm pattern with request attributes</small></p>
+    </div>
+
+    <!-- Rahul's EPG Gateway Launch Form will be injected here -->
+    <div th:utext="${EPG_GATEWAY_LAUNCH_FORM}"></div>
+    
+    <script>
+        // Additional failsafe for form submission
+        window.addEventListener('load', function() {
+            // Look for the specific __PostForm that Rahul's method creates
+            const postForm = document.__PostForm;
+            if (postForm) {
+                console.log('✅ Found __PostForm, submitting via Rahul method...');
+                postForm.submit();
+            } else {
+                // Fallback to any form
+                const forms = document.forms;
+                if (forms.length > 0) {
+                    console.log('✅ Fallback: submitting first form...');
+                    forms[0].submit();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

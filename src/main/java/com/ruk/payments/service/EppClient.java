@@ -42,6 +42,7 @@ public class EppClient {
 
     /**
      * Builds an auto-submitting HTML form for EPP hosted checkout.
+     * Uses Rahul's proven JavaScript form submission approach.
      *
      * @param saleDetails Sale details payload
      * @return HTML form as String
@@ -56,11 +57,14 @@ public class EppClient {
         // Pluggable encryption stub (TBD)
         String encryptedPayload = json; // TODO: replace with encryption logic
 
+        // Use Rahul's proven JavaScript form submission approach
         StringBuilder sb = new StringBuilder();
-        sb.append("<html><body onload='document.forms[0].submit()'>")
-          .append("<form method='POST' action='").append(eppProperties.getPaymentGatewayIndexUrl()).append("'>")
+        sb.append("<html><body>")
+          .append("<form id='__PostForm' name='__PostForm' action='").append(eppProperties.getPaymentGatewayIndexUrl()).append("' method='POST'>")
           .append("<input type='hidden' name='saleDetail' value='").append(escapeHtml(encryptedPayload)).append("'/>")
-          .append("</form></body></html>");
+          .append("</form>")
+          .append("<script language='javascript'>var v__PostForm=document.__PostForm;v__PostForm.submit();</script>")
+          .append("</body></html>");
         return sb.toString();
     }
 

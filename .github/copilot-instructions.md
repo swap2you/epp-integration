@@ -113,6 +113,8 @@ This codebase follows Spring Boot conventions but with EPP-specific adaptations 
 - ✅ **AUTO ITEMKEY POPULATION** - itemKey automatically set to orderKey
 - ✅ **VALIDATION FIX APPLIED** - No more "Application unique ID is required" errors
 - ✅ **COMMERCE HUB TESTING READY** - All validation issues resolved
+- ✅ **DUAL APPROACH IMPLEMENTATION** - Both toggle method and Rahul's ModelAndView pattern
+- ✅ **RAHUL'S JAVA ROUTE ADDED** - Separate endpoint with EpgInvoke.html template
 
 ## Architecture Highlights
 - **Controller Layer**: Thin REST controllers with minimal logic

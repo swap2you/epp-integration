@@ -76,7 +76,7 @@ public class SaleDetails {
     @Email
     @NotBlank
     @Size(max = 100) // EPP max length: 100
-    @JsonProperty("EmailId")
+    @JsonProperty("Email")
     private String email; // Email address of constituent submitting payment
 
     // Getters and Setters
