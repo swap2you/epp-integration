@@ -307,9 +307,8 @@ public class TestUIController {
         System.out.println("🔧 Building POST form using Rahul's JSONBuildPostForm approach");
         
         StringBuilder formBuilder = new StringBuilder();
-        formBuilder.append("<form id='__PostForm' name='__PostForm' action='").append(escapeForHtml(url)).append("' method='POST'>")
-                   .append("<input type='hidden' name='saleDetail' value='").append(escapeForHtml(jsonPostData)).append("'/>")
-                //    .append("<input type='hidden' name='returnUrl' value='").append(escapeForHtml(eppProperties.getReturnUrl())).append("'/>")
+        formBuilder.append("<form id='__PostForm' name='__PostForm' action='").append(url).append("' method='POST'>")
+                   .append("<input type='hidden' name='saleDetail' value='").append(jsonPostData).append("'/>")
                    .append("</form>")
                    .append("<script language='javascript'>var v__PostForm=document.__PostForm;v__PostForm.submit();</script>");
         

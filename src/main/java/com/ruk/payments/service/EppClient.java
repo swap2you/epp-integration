@@ -59,12 +59,14 @@ public class EppClient {
 
         // Use Rahul's proven JavaScript form submission approach
         StringBuilder sb = new StringBuilder();
-        sb.append("<html><body>")
+        sb
+        //   .append("<html><body>")
           .append("<form id='__PostForm' name='__PostForm' action='").append(eppProperties.getPaymentGatewayIndexUrl()).append("' method='POST'>")
-          .append("<input type='hidden' name='saleDetail' value='").append(escapeHtml(encryptedPayload)).append("'/>")
+          .append("<input type='hidden' name='saleDetail' value='").append((encryptedPayload)).append("'/>")
           .append("</form>")
           .append("<script language='javascript'>var v__PostForm=document.__PostForm;v__PostForm.submit();</script>")
-          .append("</body></html>");
+        //   .append("</body></html>")
+        ;
         return sb.toString();
     }
 
