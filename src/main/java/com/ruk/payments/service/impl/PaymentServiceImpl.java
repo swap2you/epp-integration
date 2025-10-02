@@ -17,12 +17,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Implementation of PaymentService that handles EPP payment processing.
- * 
- * This service contains all business logic for payment operations,
- * including validation, conversion, and transaction management.
- */
 @Service
 @Transactional
 public class PaymentServiceImpl implements PaymentService {
@@ -50,71 +44,50 @@ public class PaymentServiceImpl implements PaymentService {
     
     @Override
     public String initiatePayment(SaleDetails saleDetails) {
-        logger.info("Initiating payment for orderKey: {}, applicationUniqueId: {}", 
-                   saleDetails.getOrderKey(), saleDetails.getApplicationUniqueId());
+        logger.info("Initiating payment: orderKey={}", saleDetails.getOrderKey());
         
         validateEppEnabled();
         validatePaymentRequest(saleDetails);
-        
-        // Prepare sale details with proper codes and item keys
         prepareSaleDetails(saleDetails);
         
         try {
-            // Convert to JSON and handle transaction
             String rawRequest = objectMapper.writeValueAsString(saleDetails);
             handleInitialTransaction(saleDetails, rawRequest);
-            
-            // Generate hosted checkout form
-            String checkoutForm = eppClient.buildHostedCheckoutForm(saleDetails);
-            
-            logger.info("Payment initiated successfully for orderKey: {}", saleDetails.getOrderKey());
-            return checkoutForm;
-            
+            return eppClient.buildHostedCheckoutForm(saleDetails);
         } catch (JsonProcessingException e) {
-            String errorMsg = String.format("Failed to serialize payment request for orderKey: %s", saleDetails.getOrderKey());
-            logger.error(errorMsg, e);
-            throw new PaymentProcessingException("SERIALIZATION_ERROR", errorMsg, e);
+            throw new PaymentProcessingException("SERIALIZATION_ERROR", 
+                "Failed to serialize payment request", e);
         } catch (PaymentProcessingException e) {
-            // Re-throw payment processing exceptions as-is
             throw e;
         } catch (Exception e) {
-            String errorMsg = String.format("Payment initiation failed for orderKey: %s", saleDetails.getOrderKey());
-            logger.error(errorMsg, e);
-            throw new PaymentProcessingException("PAYMENT_INITIATION_FAILED", errorMsg, e);
+            throw new PaymentProcessingException("PAYMENT_INITIATION_FAILED", 
+                "Payment initiation failed", e);
         }
     }
     
     @Override
     public ApplicationResponse processCallback(EppResponse eppResponse) {
-        logger.info("Processing callback for orderKey: {}, status: {}", 
-                   eppResponse.getOrderKey(), eppResponse.getStatus());
+        logger.info("Processing callback: orderKey={}, status={}", 
+            eppResponse.getOrderKey(), eppResponse.getStatus());
         
         validateEppEnabled();
         validateCallbackRequest(eppResponse);
         
         try {
-            // Convert to JSON and process transaction
             String rawResponse = objectMapper.writeValueAsString(eppResponse);
-            EppTransaction updatedTransaction = processCallbackTransaction(eppResponse, rawResponse);
+            EppTransaction transaction = processCallbackTransaction(eppResponse, rawResponse);
             
-            // Create response
-            ApplicationResponse response = createCallbackResponse(eppResponse, updatedTransaction);
-            response.setMessage("Payment callback processed successfully");
-            
-            logger.info("Callback processed successfully for orderKey: {}", eppResponse.getOrderKey());
+            ApplicationResponse response = createCallbackResponse(eppResponse, transaction);
+            response.setMessage("Payment processed successfully");
             return response;
-            
         } catch (JsonProcessingException e) {
-            String errorMsg = String.format("Failed to serialize callback response for orderKey: %s", eppResponse.getOrderKey());
-            logger.error(errorMsg, e);
-            throw new PaymentProcessingException("SERIALIZATION_ERROR", errorMsg, e);
+            throw new PaymentProcessingException("SERIALIZATION_ERROR", 
+                "Failed to serialize callback", e);
         } catch (PaymentProcessingException e) {
-            // Re-throw payment processing exceptions as-is
             throw e;
         } catch (Exception e) {
-            String errorMsg = String.format("Callback processing failed for orderKey: %s", eppResponse.getOrderKey());
-            logger.error(errorMsg, e);
-            throw new PaymentProcessingException("CALLBACK_PROCESSING_FAILED", errorMsg, e);
+            throw new PaymentProcessingException("CALLBACK_PROCESSING_FAILED", 
+                "Callback processing failed", e);
         }
     }
     
