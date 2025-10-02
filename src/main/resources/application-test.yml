@@ -1,18 +1,9 @@
-# Test profile for H2 database
-server:
-  port: 8081  # Changed from default 8080 to avoid port conflicts
-
+# Test profile - H2 in-memory database
 spring:
-  flyway:
-    locations: classpath:db/migration/h2
-    enabled: true
-    clean-on-validation-error: true
+  datasource:
+    url: jdbc:h2:mem:rucdb
+    driver-class-name: org.h2.Driver
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
-    hibernate:
-      ddl-auto: none
-
-# EPP Test Configuration
-epp:
-  test:
-    use-direct-response: true  # false = Spring template (default), true = .NET-style direct response
+  flyway:
+    locations: classpath:db/migration/h2

@@ -1,0 +1,594 @@
+{
+  "info": {
+    "name": "RUC EPP Integration - Complete API",
+    "_postman_id": "ruc-epp-complete-2025",
+    "description": "Complete RUC (Road User Charge) EPP Integration API Collection\n\n## Overview\nThis collection covers all endpoints for Pennsylvania's Road User Charge payment processing system.\n\n## Base URL\n- **Local Development**: `http://localhost:8080`\n- **Test Environment**: Update with your test URL\n- **Production**: Update with your production URL\n\n## Profiles\n- `test` - Uses H2 in-memory database\n- `local` - Uses Oracle 12c database\n\n## Authentication\nCurrently no authentication required (add as needed for production)\n\n## Test Data\n- Order Keys: Use unique values like `RUC-{timestamp}`\n- Application IDs: Optional, format: `APP-{identifier}`\n- Email: Valid email format required\n- Amount: Decimal format (e.g., 25.00, 100.50)\n\n## Status Codes\n- `APP` - Application submitted\n- `COM` - Payment completed\n- `CAN` - Payment cancelled\n- `DEC` - Payment declined\n\n## Created: October 2025\n## Version: 2.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "ruc-epp-api"
+  },
+  "item": [
+    {
+      "name": "Payment Endpoints",
+      "item": [
+        {
+          "name": "Start Payment - Initiate RUC Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains HTML form\", function () {",
+                  "    pm.expect(pm.response.text()).to.include('form');",
+                  "    pm.expect(pm.response.text()).to.include('action');",
+                  "});",
+                  "",
+                  "pm.test(\"Content-Type is text/html\", function () {",
+                  "    pm.response.to.have.header(\"Content-Type\");",
+                  "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"text/html\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Generate unique order key",
+                  "const timestamp = Date.now();",
+                  "pm.environment.set(\"orderKey\", \"RUC-\" + timestamp);",
+                  "",
+                  "// Set test email",
+                  "pm.environment.set(\"testEmail\", \"driver@ruc.pa.gov\");"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Accept",
+                "value": "text/html, application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderKey\": \"{{orderKey}}\",\n  \"applicationUniqueId\": \"APP-RUC-2025-001\",\n  \"amount\": 25.00,\n  \"email\": \"{{testEmail}}\",\n  \"items\": [\n    {\n      \"saleItemId\": 1,\n      \"itemCode\": \"RUC_QUARTERLY\",\n      \"description\": \"Road User Charge - Q1 2025\",\n      \"amount\": 25.00,\n      \"count\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/epp/start",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "epp",
+                "start"
+              ]
+            },
+            "description": "**Initiates a new RUC payment transaction**\n\n### Request Body\n- `orderKey` (required): Unique identifier for the order\n- `applicationUniqueId` (optional): Application-specific identifier\n- `amount` (required): Total payment amount (decimal)\n- `email` (required): Payer's email address\n- `items` (required): Array of sale items\n  - `saleItemId` (optional): Item ID\n  - `itemCode` (optional): Item code/SKU\n  - `description` (required): Item description\n  - `amount` (required): Item amount\n  - `count` (optional): Quantity, default = 1\n\n### Response\n- **Success (200)**: Returns HTML form that auto-submits to EPP gateway\n- **Error (400)**: Validation errors in request body\n- **Error (500)**: Server error during processing\n\n### Notes\n- The response HTML contains an auto-submitting form\n- Form redirects user to Pennsylvania EPP payment gateway\n- After payment, EPP redirects back to `/payments/epp/OnEPPResult`"
+          },
+          "response": [
+            {
+              "name": "Success - HTML Form Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"orderKey\": \"RUC-1696234567890\",\n  \"applicationUniqueId\": \"APP-RUC-2025-001\",\n  \"amount\": 25.00,\n  \"email\": \"driver@ruc.pa.gov\",\n  \"items\": [\n    {\n      \"saleItemId\": 1,\n      \"itemCode\": \"RUC_QUARTERLY\",\n      \"description\": \"Road User Charge - Q1 2025\",\n      \"amount\": 25.00,\n      \"count\": 1\n    }\n  ]\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:8080/payments/epp/start",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "payments",
+                    "epp",
+                    "start"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "html",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/html;charset=UTF-8"
+                }
+              ],
+              "cookie": [],
+              "body": "<!DOCTYPE html>\n<html>\n<head>\n    <title>Redirecting to Payment Gateway...</title>\n</head>\n<body>\n    <form id=\"__PostForm\" name=\"__PostForm\" action=\"https://epp.example.com/Payment/Index\" method=\"POST\">\n        <input type=\"hidden\" name=\"EncryptedPayload\" value=\"{encrypted_data}\" />\n    </form>\n    <script type=\"text/javascript\">\n        document.getElementById('__PostForm').submit();\n    </script>\n</body>\n</html>"
+            }
+          ]
+        },
+        {
+          "name": "Start Payment - Multiple Items",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const timestamp = Date.now();",
+                  "pm.environment.set(\"orderKey\", \"RUC-MULTI-\" + timestamp);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderKey\": \"{{orderKey}}\",\n  \"applicationUniqueId\": \"APP-MULTI-001\",\n  \"amount\": 75.50,\n  \"email\": \"fleet@trucking.com\",\n  \"items\": [\n    {\n      \"saleItemId\": 1,\n      \"itemCode\": \"RUC_BASE\",\n      \"description\": \"Base Road User Charge\",\n      \"amount\": 25.00,\n      \"count\": 1\n    },\n    {\n      \"saleItemId\": 2,\n      \"itemCode\": \"RUC_HEAVY\",\n      \"description\": \"Heavy Vehicle Surcharge\",\n      \"amount\": 35.50,\n      \"count\": 1\n    },\n    {\n      \"saleItemId\": 3,\n      \"itemCode\": \"RUC_ADMIN\",\n      \"description\": \"Administrative Fee\",\n      \"amount\": 15.00,\n      \"count\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/epp/start",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "epp",
+                "start"
+              ]
+            },
+            "description": "Example with multiple line items for complex RUC payments (fleet vehicles, heavy vehicles, etc.)"
+          },
+          "response": []
+        },
+        {
+          "name": "EPP Result Callback - Payment Complete",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderKey\": \"RUC-1696234567890\",\n  \"applicationUniqueId\": \"APP-RUC-2025-001\",\n  \"status\": \"COM\",\n  \"authCode\": \"AUTH-789456123\",\n  \"referenceNo\": \"REF-PA-2025-001234\",\n  \"amount\": 25.00,\n  \"transactionId\": \"TXN-EPP-987654\",\n  \"timestamp\": \"2025-10-02T14:30:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/epp/OnEPPResult",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "epp",
+                "OnEPPResult"
+              ]
+            },
+            "description": "**EPP Gateway Callback - Successful Payment**\n\n### Called By\nPennsylvania EPP Commerce Hub after payment processing\n\n### Request Body\n- `orderKey` (required): Original order identifier\n- `applicationUniqueId` (optional): Original application ID\n- `status` (required): Payment status\n  - `COM` = Completed\n  - `CAN` = Cancelled\n  - `DEC` = Declined\n- `authCode` (optional): Authorization code\n- `referenceNo` (optional): EPP reference number\n- `amount` (optional): Transaction amount\n- `transactionId` (optional): EPP transaction ID\n- `timestamp` (optional): Transaction timestamp\n\n### Response\n- **Success (200)**: Returns ApplicationResponse with status\n- **Error (404)**: Transaction not found\n- **Error (500)**: Processing error"
+          },
+          "response": []
+        },
+        {
+          "name": "EPP Result Callback - Payment Cancelled",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderKey\": \"RUC-1696234567890\",\n  \"applicationUniqueId\": \"APP-RUC-2025-001\",\n  \"status\": \"CAN\",\n  \"referenceNo\": \"REF-PA-2025-001234\",\n  \"timestamp\": \"2025-10-02T14:35:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/epp/OnEPPResult",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "epp",
+                "OnEPPResult"
+              ]
+            },
+            "description": "EPP callback when user cancels the payment"
+          },
+          "response": []
+        },
+        {
+          "name": "EPP Result Callback - Payment Declined",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderKey\": \"RUC-1696234567890\",\n  \"applicationUniqueId\": \"APP-RUC-2025-001\",\n  \"status\": \"DEC\",\n  \"referenceNo\": \"REF-PA-2025-001234\",\n  \"declineReason\": \"Insufficient funds\",\n  \"timestamp\": \"2025-10-02T14:40:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/epp/OnEPPResult",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "epp",
+                "OnEPPResult"
+              ]
+            },
+            "description": "EPP callback when payment is declined by the payment processor"
+          },
+          "response": []
+        }
+      ],
+      "description": "Core payment processing endpoints for RUC transactions"
+    },
+    {
+      "name": "Utility Endpoints",
+      "item": [
+        {
+          "name": "Health Check - Ping",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is 'pong'\", function () {",
+                  "    pm.expect(pm.response.text()).to.eql(\"pong\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/epp/ping",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "epp",
+                "ping"
+              ]
+            },
+            "description": "**Simple health check endpoint**\n\n### Response\n- Returns plain text \"pong\" if service is running\n- Status: 200 OK\n\n### Use Cases\n- Service health monitoring\n- Load balancer health checks\n- Quick connectivity test"
+          },
+          "response": [
+            {
+              "name": "Success - Pong",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/payments/epp/ping",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "payments",
+                    "epp",
+                    "ping"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "plain",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/plain;charset=UTF-8"
+                }
+              ],
+              "cookie": [],
+              "body": "pong"
+            }
+          ]
+        },
+        {
+          "name": "Debug JSON - Test JSON Processing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderKey\": \"DEBUG-TEST-001\",\n  \"applicationUniqueId\": \"APP-DEBUG-001\",\n  \"amount\": 10.00,\n  \"email\": \"debug@test.com\",\n  \"items\": [\n    {\n      \"saleItemId\": 1,\n      \"itemCode\": \"DEBUG_ITEM\",\n      \"description\": \"Debug Test Item\",\n      \"amount\": 10.00,\n      \"count\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/epp/debug-json",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "epp",
+                "debug-json"
+              ]
+            },
+            "description": "**Debug endpoint for testing JSON serialization/deserialization**\n\n### Purpose\n- Validate request body structure\n- Test JSON parsing\n- Debug data mapping issues\n\n### Response\n- Echoes back the parsed SaleDetails object\n- Useful for troubleshooting integration issues"
+          },
+          "response": []
+        }
+      ],
+      "description": "Utility endpoints for testing and monitoring"
+    },
+    {
+      "name": "Test UI Endpoints",
+      "item": [
+        {
+          "name": "Test Form - Modern UI",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/test/form",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "test",
+                "form"
+              ]
+            },
+            "description": "**Test UI Form - Modern Design**\n\n### Returns\n- HTML test form with modern gradient design\n- Purple/blue gradient background\n- Responsive card layout\n- Pre-filled test data\n\n### Features\n- Quick payment testing\n- Dynamic item management\n- Real-time form validation\n- Mobile responsive\n\n### Access\nOpen in browser: http://localhost:8080/test/form"
+          },
+          "response": []
+        },
+        {
+          "name": "RUC Payment Invoke",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/test/ruc-invoke",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "test",
+                "ruc-invoke"
+              ]
+            },
+            "description": "**RUC Payment Invocation Page**\n\n### Returns\n- Payment processing UI with modern design\n- Shows payment submission flow\n- Displays loading states\n\n### Used For\n- Demonstrating payment UX\n- Testing payment submission\n- UI/UX validation"
+          },
+          "response": []
+        }
+      ],
+      "description": "Test UI pages for manual testing and demonstration"
+    },
+    {
+      "name": "Error Scenarios",
+      "item": [
+        {
+          "name": "Missing Required Fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderKey\": \"TEST-ERROR-001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/epp/start",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "epp",
+                "start"
+              ]
+            },
+            "description": "Test validation errors when required fields are missing"
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid Email Format",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderKey\": \"TEST-ERROR-002\",\n  \"amount\": 25.00,\n  \"email\": \"not-an-email\",\n  \"items\": [\n    {\n      \"description\": \"Test Item\",\n      \"amount\": 25.00\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/epp/start",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "epp",
+                "start"
+              ]
+            },
+            "description": "Test email validation"
+          },
+          "response": []
+        },
+        {
+          "name": "Negative Amount",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderKey\": \"TEST-ERROR-003\",\n  \"amount\": -25.00,\n  \"email\": \"test@example.com\",\n  \"items\": [\n    {\n      \"description\": \"Test Item\",\n      \"amount\": -25.00\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/epp/start",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "epp",
+                "start"
+              ]
+            },
+            "description": "Test amount validation (should reject negative amounts)"
+          },
+          "response": []
+        }
+      ],
+      "description": "Error scenarios for validation testing"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set base URL if not already set",
+          "if (!pm.environment.get(\"baseUrl\")) {",
+          "    pm.environment.set(\"baseUrl\", \"http://localhost:8080\");",
+          "}",
+          "",
+          "// Log request details",
+          "console.log(\"Request to: \" + pm.request.url.toString());"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global response time check",
+          "pm.test(\"Response time is less than 5000ms\", function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "// Log response details",
+          "console.log(\"Status: \" + pm.response.code);",
+          "console.log(\"Time: \" + pm.response.responseTime + \"ms\");"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "orderKey",
+      "value": "RUC-{{$timestamp}}",
+      "type": "string"
+    },
+    {
+      "key": "testEmail",
+      "value": "driver@ruc.pa.gov",
+      "type": "string"
+    }
+  ]
+}

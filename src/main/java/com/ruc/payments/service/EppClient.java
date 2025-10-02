@@ -1,0 +1,124 @@
+
+package com.ruc.payments.service;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ruc.payments.config.EppProperties;
+import com.ruc.payments.dto.SaleDetails;
+import com.ruc.payments.entity.EppTransaction;
+import com.ruc.payments.exception.PaymentProcessingException;
+import com.ruc.payments.repo.EppTransactionRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.Optional;
+
+
+/**
+ * EPP (Electronic Payment Platform) Integration Service.
+ * 
+ * This service handles all direct interactions with the Pennsylvania EPP system:
+ * - Generates HTML forms for hosted checkout redirect
+ * - Manages transaction persistence and idempotency 
+ * - Formats data according to EPP specification requirements
+ * - Handles JSON serialization with proper escaping for EPP forms
+ * 
+ * @see <a href="https://epp.beta.pa.gov">Pennsylvania EPP Documentation</a>
+ */
+@Service
+public class EppClient {
+    private final EppProperties eppProperties;
+    private final EppTransactionRepository repo;
+    private final ObjectMapper objectMapper;
+
+    /**
+     * Constructor for dependency injection.
+     */
+    public EppClient(EppProperties eppProperties, EppTransactionRepository repo, ObjectMapper objectMapper) {
+        this.eppProperties = eppProperties;
+        this.repo = repo;
+        this.objectMapper = objectMapper;
+    }
+
+    /**
+     * Builds an auto-submitting HTML form for EPP hosted checkout.
+     * Uses Rahul's proven JavaScript form submission approach.
+     *
+     * @param saleDetails Sale details payload
+     * @return HTML form as String
+     */
+    public String buildHostedCheckoutForm(SaleDetails saleDetails) {
+        String json;
+        try {
+            json = objectMapper.writeValueAsString(saleDetails);
+        } catch (JsonProcessingException e) {
+            throw new PaymentProcessingException("JSON_SERIALIZATION_FAILED", 
+                "Failed to serialize SaleDetails to JSON", e);
+        }
+        // Pluggable encryption stub (TBD)
+        String encryptedPayload = json; // TODO: replace with encryption logic
+        
+        // Properly escape JSON for HTML embedding
+        String escapedJson = escapeHtml(encryptedPayload);
+
+        // Use Rahul's proven JavaScript form submission approach
+        StringBuilder sb = new StringBuilder();
+        sb.append("<form id='__PostForm' name='__PostForm' action='")
+          .append(eppProperties.getPaymentGatewayIndexUrl())
+          .append("' method='POST'>")
+          .append("<input type='hidden' name='saleDetail' value='")
+          .append(escapedJson)
+          .append("'/>")
+          .append("</form>")
+          .append("<script language='javascript'>var v__PostForm=document.__PostForm;v__PostForm.submit();</script>");
+        return sb.toString();
+    }
+
+    /**
+     * Escapes HTML special characters for safe embedding in HTML.
+     * Properly escapes JSON for EPP Commerce Hub requirements.
+     */
+    private String escapeHtml(String input) {
+        if (input == null) return "";
+        
+        return input
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;");
+    }
+
+    /**
+     * Idempotent upsert for EPP transaction.
+     *
+     * @param orderKey Order key
+     * @param applicationUniqueId Application unique ID
+     * @param status Transaction status
+     * @param amount Transaction amount
+     * @param email Payer email
+     * @param rawRequest Raw request JSON
+     * @param rawResponse Raw response JSON
+     * @param authCode Authorization code
+     * @param referenceNo Reference number
+     * @return Upserted EppTransaction
+     */
+    @Transactional
+    public EppTransaction upsertTransaction(String orderKey, String applicationUniqueId, String status,
+                                            BigDecimal amount, String email, String rawRequest, String rawResponse,
+                                            String authCode, String referenceNo) {
+        Optional<EppTransaction> existing = repo.findByOrderKeyAndApplicationUniqueId(orderKey, applicationUniqueId);
+        EppTransaction tx = existing.orElseGet(EppTransaction::new);
+        tx.setOrderKey(orderKey);
+        tx.setApplicationUniqueId(applicationUniqueId);
+        tx.setStatus(status);
+        tx.setAmount(amount);
+        tx.setEmail(email);
+        tx.setRawRequest(rawRequest);
+        tx.setRawResponse(rawResponse);
+        tx.setAuthCode(authCode);
+        tx.setReferenceNo(referenceNo);
+        return repo.save(tx);
+    }
+}
