@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚗 RUC Payment Gateway - Ultra Modern Interface</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* Animated background particles */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 20s infinite ease-in-out;
+        }
+        
+        .particle:nth-child(1) { width: 80px; height: 80px; top: 10%; left: 10%; animation-delay: 0s; }
+        .particle:nth-child(2) { width: 60px; height: 60px; top: 60%; left: 80%; animation-delay: 2s; }
+        .particle:nth-child(3) { width: 100px; height: 100px; top: 80%; left: 20%; animation-delay: 4s; }
+        .particle:nth-child(4) { width: 40px; height: 40px; top: 20%; left: 70%; animation-delay: 6s; }
+        .particle:nth-child(5) { width: 70px; height: 70px; top: 50%; left: 50%; animation-delay: 8s; }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
+            50% { transform: translateY(-100px) rotate(180deg); opacity: 0.6; }
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .header-section {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: slideDown 0.8s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .logo-container {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.2);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
+            50% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(255, 255, 255, 0); }
+        }
+        
+        .logo-container .logo {
+            font-size: 50px;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+        }
+        
+        h1 {
+            color: white;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 18px;
+            font-weight: 400;
+        }
+        
+        .main-card {
+            background: rgba(255, 255, 255, 0.98);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            border-radius: 30px;
+            padding: 50px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.8s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .section-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .form-group {
+            position: relative;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+        
+        input[type="text"], 
+        input[type="email"], 
+        input[type="number"] {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        input:focus + label {
+            color: #667eea;
+        }
+        
+        .methods-section {
+            margin-top: 50px;
+            padding-top: 40px;
+            border-top: 2px dashed #e2e8f0;
+        }
+        
+        .methods-title {
+            text-align: center;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #2d3748;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .methods-subtitle {
+            text-align: center;
+            color: #718096;
+            margin-bottom: 40px;
+            font-size: 16px;
+        }
+        
+        .method-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+        }
+        
+        .method-card {
+            position: relative;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 30px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            overflow: hidden;
+            cursor: pointer;
+        }
+        
+        .method-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transform: scaleX(0);
+            transition: transform 0.4s ease;
+        }
+        
+        .method-card:hover {
+            border-color: #667eea;
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.2);
+        }
+        
+        .method-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .method-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 28px;
+            animation: iconBounce 2s infinite;
+        }
+        
+        @keyframes iconBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .method-card:hover .method-icon {
+            animation: iconSpin 0.6s ease;
+        }
+        
+        @keyframes iconSpin {
+            from { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.2); }
+            to { transform: rotate(360deg) scale(1); }
+        }
+        
+        .method-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+        
+        .method-description {
+            font-size: 14px;
+            color: #718096;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            min-height: 60px;
+        }
+        
+        .method-btn {
+            width: 100%;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            color: white;
+        }
+        
+        .method-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .method-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .method-btn span {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .method-btn.method1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .method-btn.method1:hover {
+            box-shadow: 0 12px 30px rgba(102, 126, 234, 0.6);
+            transform: translateY(-2px);
+        }
+        
+        .method-btn.method2 {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            box-shadow: 0 8px 20px rgba(240, 147, 251, 0.4);
+        }
+        
+        .method-btn.method2:hover {
+            box-shadow: 0 12px 30px rgba(240, 147, 251, 0.6);
+            transform: translateY(-2px);
+        }
+        
+        .method-btn.method3 {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            box-shadow: 0 8px 20px rgba(79, 172, 254, 0.4);
+        }
+        
+        .method-btn.method3:hover {
+            box-shadow: 0 12px 30px rgba(79, 172, 254, 0.6);
+            transform: translateY(-2px);
+        }
+        
+        .method-btn.method4 {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            box-shadow: 0 8px 20px rgba(250, 112, 154, 0.4);
+        }
+        
+        .method-btn.method4:hover {
+            box-shadow: 0 12px 30px rgba(250, 112, 154, 0.6);
+            transform: translateY(-2px);
+        }
+        
+        .method-btn.method5 {
+            background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+            box-shadow: 0 8px 20px rgba(48, 207, 208, 0.4);
+        }
+        
+        .method-btn.method5:hover {
+            box-shadow: 0 12px 30px rgba(48, 207, 208, 0.6);
+            transform: translateY(-2px);
+        }
+        
+        .error-alert {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
+            animation: shake 0.5s ease;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        .error-alert strong {
+            font-weight: 700;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        /* Loading animation */
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(102, 126, 234, 0.95);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .loading.active {
+            display: flex;
+        }
+        
+        .loading-content {
+            text-align: center;
+            color: white;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            h1 { font-size: 32px; }
+            .main-card { padding: 30px 20px; }
+            .form-row { grid-template-columns: 1fr; }
+            .method-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animation">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <h2>Processing Payment...</h2>
+            <p>Please wait while we redirect you to the payment gateway</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header-section">
+            <div class="logo-container">
+                <div class="logo">🚗</div>
+            </div>
+            <h1>Road User Charge</h1>
+            <p class="subtitle">Pennsylvania Payment Gateway - Advanced Integration Platform</p>
+        </div>
+
+        <!-- Main Card -->
+        <div class="main-card">
+            <!-- Error Alert -->
+            <div th:if="${error}" class="error-alert">
+                <strong>⚠️ Error Occurred</strong>
+                <span th:text="${error}"></span>
+            </div>
+
+            <!-- Payment Form -->
+            <form id="paymentForm">
+                <div class="section-title">Payment Information</div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="applicationCode">Application Code</label>
+                        <input type="text" id="applicationCode" name="applicationCode" 
+                               th:value="${applicationCode}" required 
+                               placeholder="Enter application code">
+                    </div>
+                    <div class="form-group">
+                        <label for="orderKey">Order Key</label>
+                        <input type="text" id="orderKey" name="orderKey" 
+                               th:value="${orderKey}" required 
+                               placeholder="Unique order identifier">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="firstName">First Name</label>
+                        <input type="text" id="firstName" name="firstName" 
+                               th:value="${firstName}" required 
+                               placeholder="John">
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">Last Name</label>
+                        <input type="text" id="lastName" name="lastName" 
+                               th:value="${lastName}" required 
+                               placeholder="Doe">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="address1">Address Line 1</label>
+                        <input type="text" id="address1" name="address1" 
+                               th:value="${address1}" required 
+                               placeholder="123 Main Street">
+                    </div>
+                    <div class="form-group">
+                        <label for="address2">Address Line 2</label>
+                        <input type="text" id="address2" name="address2" 
+                               th:value="${address2}" 
+                               placeholder="Apt 4B (optional)">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="city">City</label>
+                        <input type="text" id="city" name="city" 
+                               th:value="${city}" required 
+                               placeholder="Harrisburg">
+                    </div>
+                    <div class="form-group">
+                        <label for="stateCode">State Code</label>
+                        <input type="text" id="stateCode" name="stateCode" 
+                               th:value="${stateCode}" required 
+                               maxlength="2" 
+                               placeholder="PA">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="zipCode">ZIP Code</label>
+                        <input type="text" id="zipCode" name="zipCode" 
+                               th:value="${zipCode}" required 
+                               placeholder="17101">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" 
+                               th:value="${email}" required 
+                               placeholder="driver@example.com">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="amount">Payment Amount ($)</label>
+                        <input type="number" id="amount" name="amount" 
+                               th:value="${amount}" required 
+                               step="0.01" min="0.01" 
+                               placeholder="25.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <input type="text" id="description" name="description" 
+                               th:value="${description}" required 
+                               placeholder="RUC Quarterly Payment">
+                    </div>
+                </div>
+
+                <!-- Integration Methods -->
+                <div class="methods-section">
+                    <div class="methods-title">Choose Integration Method</div>
+                    <p class="methods-subtitle">Select your preferred payment processing approach - Now with 5 different methods!</p>
+                    
+                    <div class="method-grid">
+                        <!-- Method 1: Direct Response -->
+                        <div class="method-card" onclick="submitPayment('/test/method1-direct')">
+                            <div class="method-icon">⚡</div>
+                            <div class="method-title">Direct Response</div>
+                            <div class="method-description">
+                                Instant HTML generation with automatic form submission. Best for .NET-style integration.
+                            </div>
+                            <button type="button" class="method-btn method1">
+                                <span>Pay with Direct Response</span>
+                            </button>
+                        </div>
+
+                        <!-- Method 2: Template Rendering -->
+                        <div class="method-card" onclick="submitPayment('/test/method2-template')">
+                            <div class="method-icon">🎨</div>
+                            <div class="method-title">Template Engine</div>
+                            <div class="method-description">
+                                Server-side Thymeleaf template processing. Ideal for Spring Boot applications.
+                            </div>
+                            <button type="button" class="method-btn method2">
+                                <span>Pay with Template</span>
+                            </button>
+                        </div>
+
+                        <!-- Method 3: ModelAndView -->
+                        <div class="method-card" onclick="submitPayment('/test/method3-modelview')">
+                            <div class="method-icon">📱</div>
+                            <div class="method-title">ModelAndView</div>
+                            <div class="method-description">
+                                Traditional MVC pattern with model attributes. Perfect for legacy system compatibility.
+                            </div>
+                            <button type="button" class="method-btn method3">
+                                <span>Pay with ModelAndView</span>
+                            </button>
+                        </div>
+
+                        <!-- Method 4: AJAX/JSON -->
+                        <div class="method-card" onclick="submitPayment('/test/method4-ajax')">
+                            <div class="method-icon">🔄</div>
+                            <div class="method-title">AJAX Response</div>
+                            <div class="method-description">
+                                Asynchronous JSON response with client-side form injection. Modern SPA approach.
+                            </div>
+                            <button type="button" class="method-btn method4">
+                                <span>Pay with AJAX</span>
+                            </button>
+                        </div>
+
+                        <!-- Method 5: REST API -->
+                        <div class="method-card" onclick="submitPayment('/test/method5-rest')">
+                            <div class="method-icon">🌐</div>
+                            <div class="method-title">REST API</div>
+                            <div class="method-description">
+                                Pure RESTful API endpoint returning structured JSON. Best for microservices architecture.
+                            </div>
+                            <button type="button" class="method-btn method5">
+                                <span>Pay with REST API</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function submitPayment(endpoint) {
+            const form = document.getElementById('paymentForm');
+            
+            // Show loading overlay
+            document.getElementById('loadingOverlay').classList.add('active');
+            
+            // Validate form
+            if (!form.checkValidity()) {
+                document.getElementById('loadingOverlay').classList.remove('active');
+                form.reportValidity();
+                return;
+            }
+            
+            // Check if this is Method 4 (AJAX) or Method 5 (REST API)
+            if (endpoint === '/test/method4-ajax' || endpoint === '/test/method5-rest') {
+                // Handle AJAX/REST methods with fetch
+                handleAjaxSubmission(endpoint, form);
+            } else {
+                // Traditional form submission for Method 1, 2, 3
+                form.action = endpoint;
+                form.method = 'POST';
+                
+                setTimeout(() => {
+                    form.submit();
+                }, 500);
+            }
+        }
+        
+        function handleAjaxSubmission(endpoint, form) {
+            // Collect form data
+            const formData = new FormData(form);
+            
+            // Convert to URL-encoded format
+            const urlEncodedData = new URLSearchParams(formData).toString();
+            
+            // Make AJAX request
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: urlEncodedData
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Response from server:', data);
+                
+                if (data.success) {
+                    if (endpoint === '/test/method4-ajax') {
+                        // Method 4: Inject the form HTML and auto-submit
+                        console.log('Method 4: Injecting EPP form HTML...');
+                        
+                        // Create a temporary container
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = data.formHtml;
+                        
+                        // Hide main content
+                        document.querySelector('.container').style.display = 'none';
+                        
+                        // Append form to body
+                        document.body.appendChild(tempDiv);
+                        
+                        // The form should auto-submit via its embedded script
+                        console.log('EPP form injected and should auto-submit to:', data.gatewayUrl);
+                        
+                    } else if (endpoint === '/test/method5-rest') {
+                        // Method 5: Build form manually from REST data
+                        console.log('Method 5: Building EPP form from REST API data...');
+                        
+                        // Parse the paymentData JSON string
+                        const paymentData = JSON.parse(data.paymentData);
+                        
+                        // Create form element
+                        const eppForm = document.createElement('form');
+                        eppForm.id = '__PostForm';
+                        eppForm.name = '__PostForm';
+                        eppForm.action = data.gatewayUrl;
+                        eppForm.method = 'POST';
+                        
+                        // Create hidden input with saleDetail
+                        const hiddenInput = document.createElement('input');
+                        hiddenInput.type = 'hidden';
+                        hiddenInput.name = 'saleDetail';
+                        hiddenInput.value = data.paymentData;
+                        
+                        eppForm.appendChild(hiddenInput);
+                        
+                        // Hide main content
+                        document.querySelector('.container').style.display = 'none';
+                        
+                        // Append form to body
+                        document.body.appendChild(eppForm);
+                        
+                        // Submit the form
+                        console.log('Submitting EPP form to:', data.gatewayUrl);
+                        eppForm.submit();
+                    }
+                } else {
+                    // Hide loading and show error
+                    document.getElementById('loadingOverlay').classList.remove('active');
+                    alert('Payment processing failed: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('loadingOverlay').classList.remove('active');
+                alert('An error occurred while processing your payment. Please try again.');
+            });
+        }
+        
+        // Add input animation effects
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'translateY(-2px)';
+            });
+            
+            input.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'translateY(0)';
+            });
+        });
+    </script>
+</body>
+</html>

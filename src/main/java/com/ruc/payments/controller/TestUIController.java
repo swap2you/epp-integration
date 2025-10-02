@@ -11,7 +11,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Arrays;
 
@@ -22,6 +21,8 @@ import java.util.Arrays;
 @Controller
 @RequestMapping("/test")
 public class TestUIController {
+    
+    private static final String LAUNCH_FORM_STRING_PREFIX = "***Launch Form String: ";
     
     private final ObjectMapper objectMapper;
     private final EppProperties eppProperties;
@@ -53,7 +54,7 @@ public class TestUIController {
         model.addAttribute("amount", "100.00");
         model.addAttribute("description", "RUC Payment Test");
         
-        return "test-form";
+        return "test-form-modern";
     }
     
     /**
@@ -65,8 +66,10 @@ public class TestUIController {
         SaleDetails saleDetails = buildSaleDetails(request);
         String jsonPayload = objectMapper.writeValueAsString(saleDetails);
         String launchFormString = buildEppForm(jsonPayload);
-        
-        System.out.println("Launch Form String: " + launchFormString);
+
+        System.out.println("------------------------------------------------------");  
+        System.out.println(LAUNCH_FORM_STRING_PREFIX + launchFormString);
+        System.out.println("------------------------------------------------------");
         
         response.setContentType("text/html; charset=UTF-8");
         response.getWriter().write(launchFormString);
@@ -82,8 +85,10 @@ public class TestUIController {
         SaleDetails saleDetails = buildSaleDetails(request);
         String jsonPayload = objectMapper.writeValueAsString(saleDetails);
         String launchFormString = buildEppForm(jsonPayload);
-        
-        System.out.println("Launch Form String: " + launchFormString);
+
+        System.out.println("------------------------------------------------------");
+        System.out.println(LAUNCH_FORM_STRING_PREFIX + launchFormString);
+        System.out.println("------------------------------------------------------");
         
         model.addAttribute("eppForm", launchFormString);
         return "epp-redirect";
@@ -99,10 +104,72 @@ public class TestUIController {
         String jsonPayload = objectMapper.writeValueAsString(saleDetails);
         String launchFormString = buildEppForm(jsonPayload);
         
-        System.out.println("Launch Form String: " + launchFormString);
-        
+        System.out.println("------------------------------------------------------");
+        System.out.println(LAUNCH_FORM_STRING_PREFIX + launchFormString);
+        System.out.println("------------------------------------------------------");
+
         request.setAttribute("EPG_GATEWAY_LAUNCH_FORM", launchFormString);
         return new ModelAndView("EpgInvoke");
+    }
+    
+    /**
+     * Method 4: AJAX/JSON Response
+     * Returns JSON with form HTML for client-side injection
+     * Perfect for Single Page Applications (SPA) and modern frontend frameworks
+     */
+    @PostMapping("/method4-ajax")
+    @ResponseBody
+    public java.util.Map<String, Object> method4Ajax(HttpServletRequest request) throws Exception {
+        SaleDetails saleDetails = buildSaleDetails(request);
+        String jsonPayload = objectMapper.writeValueAsString(saleDetails);
+        String launchFormString = buildEppForm(jsonPayload);
+        
+        System.out.println("------------------------------------------------------");
+        System.out.println(LAUNCH_FORM_STRING_PREFIX + launchFormString);
+        System.out.println("------------------------------------------------------");
+        
+        // Return JSON response with form HTML
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        response.put("success", true);
+        response.put("formHtml", launchFormString);
+        response.put("gatewayUrl", eppProperties.getPaymentGatewayIndexUrl());
+        response.put("orderKey", saleDetails.getOrderKey());
+        response.put("message", "Payment form generated successfully");
+        
+        return response;
+    }
+    
+    /**
+     * Method 5: Pure REST API Endpoint
+     * Returns structured JSON data without form HTML
+     * Best for microservices, mobile apps, and API-first architecture
+     */
+    @PostMapping("/method5-rest")
+    @ResponseBody
+    public java.util.Map<String, Object> method5Rest(HttpServletRequest request) throws Exception {
+        SaleDetails saleDetails = buildSaleDetails(request);
+        String jsonPayload = objectMapper.writeValueAsString(saleDetails);
+        
+        System.out.println("------------------------------------------------------");
+        System.out.println("REST API Call - Payment Details:");
+        System.out.println("Order Key: " + saleDetails.getOrderKey());
+        System.out.println("Amount: $" + saleDetails.getTotalAmount());
+        System.out.println("Email: " + saleDetails.getEmail());
+        System.out.println("------------------------------------------------------");
+        
+        // Return pure REST API response
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        response.put("success", true);
+        response.put("orderKey", saleDetails.getOrderKey());
+        response.put("applicationCode", saleDetails.getApplicationCode());
+        response.put("amount", saleDetails.getTotalAmount());
+        response.put("gatewayUrl", eppProperties.getPaymentGatewayIndexUrl());
+        response.put("paymentData", jsonPayload);
+        response.put("timestamp", java.time.OffsetDateTime.now().toString());
+        response.put("message", "Payment data prepared - ready for submission");
+        response.put("instructions", "POST the paymentData to gatewayUrl with field name 'saleDetail'");
+        
+        return response;
     }
 
     private SaleDetails buildSaleDetails(HttpServletRequest request) {
