@@ -15,9 +15,9 @@ Write-Host "Spring Profile set to: $env:SPRING_PROFILES_ACTIVE" -ForegroundColor
 Write-Host ""
 
 # Step 3: Clean Build
-Write-Host "Step 3: Running Maven clean install..." -ForegroundColor Yellow
-# mvn clean install
-mvn clean compile
+Write-Host "Step 3: Running Maven clean compile..." -ForegroundColor Yellow
+# mvn clean install   # Full build: compile + run tests + create JAR (slower, for production/testing)
+mvn clean compile     # Quick build: just compile source code (faster, for development)
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
