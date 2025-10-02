@@ -10,11 +10,13 @@ This is a **generic, reusable payment integration component** designed for Penns
 
 **Key Features:**
 - ✅ EPP payment initiation and processing
+- ✅ **5 Integration Methods** (Direct, Template, ModelAndView, AJAX, REST API)
+- ✅ **Ultra-Modern Animated UI** with glassmorphism design
 - ✅ Transaction persistence and auditing
-- ✅ Multiple integration patterns (REST API, templates, direct response)
 - ✅ H2 (testing) and Oracle (production) database support
-- ✅ Professional test UI with modern design
+- ✅ Professional test UI with card-based method selection
 - ✅ Comprehensive error handling and validation
+- ✅ **Back Button Support** with automatic loading state reset
 
 ---
 
@@ -38,7 +40,7 @@ mvn clean spring-boot:run
 
 ### Test the Application
 - **Health Check**: http://localhost:8080/payments/epp/ping → Returns "pong"
-- **Test UI**: http://localhost:8080/test/form → Payment form interface
+- **Test UI**: http://localhost:8080/test/form → **Modern Payment Form with 5 Integration Methods**
 - **API Endpoint**: POST http://localhost:8080/payments/epp/start
 
 For detailed startup instructions, see **QUICK_START.md**
@@ -53,12 +55,76 @@ For detailed startup instructions, see **QUICK_START.md**
 | `/payments/epp/start` | POST | Initiate EPP payment |
 | `/payments/epp/OnEPPResult` | POST | EPP callback handler (receives payment result) |
 | `/payments/epp/debug-json` | POST | JSON payload debugging tool |
-| `/test/form` | GET | Test payment form UI |
+| `/test/form` | GET | **Modern UI with 5 integration methods** |
+| `/test/method1-direct` | POST | Direct Response integration |
+| `/test/method2-template` | POST | Template Engine integration |
+| `/test/method3-modelview` | POST | ModelAndView integration |
+| `/test/method4-ajax` | POST | **AJAX/JSON Response integration (NEW)** |
+| `/test/method5-rest` | POST | **REST API integration (NEW)** |
 | `/test/ruc-invoke` | GET | RUC payment invoke page (ModelAndView) |
 
 ---
 
-## 🏗️ Project Architecture
+## � Integration Methods
+
+The application now supports **5 distinct integration patterns** for maximum flexibility:
+
+### Method 1: Direct Response (⚡ Purple)
+- **Backend**: Writes HTML directly to `HttpServletResponse`
+- **Frontend**: Browser receives and auto-submits form
+- **Use Case**: .NET-style integration, legacy systems
+- **Redirect**: Automatic via embedded JavaScript
+
+### Method 2: Template Engine (🎨 Pink)
+- **Backend**: Thymeleaf template rendering (`epp-redirect.html`)
+- **Frontend**: Server-rendered HTML with auto-submit
+- **Use Case**: Spring Boot applications, server-side rendering
+- **Redirect**: Automatic via template script
+
+### Method 3: ModelAndView (📱 Cyan)
+- **Backend**: Traditional MVC with `ModelAndView` object
+- **Frontend**: Template-based rendering (`RucInvoke.html`)
+- **Use Case**: Classic Spring MVC applications
+- **Redirect**: Automatic via template script
+
+### Method 4: AJAX Response (🔄 Orange) - **NEW**
+- **Backend**: Returns JSON with `formHtml` field
+- **Frontend**: JavaScript fetches JSON, injects HTML, auto-submits
+- **Use Case**: Single Page Applications (SPAs), modern web apps
+- **Redirect**: Client-side via JavaScript fetch and DOM injection
+- **Response Format**:
+  ```json
+  {
+    "success": true,
+    "orderKey": "TEST-ORDER-xxx",
+    "gatewayUrl": "https://epp.beta.pa.gov/Payment/Index",
+    "formHtml": "<form>...</form><script>...</script>",
+    "message": "Payment form generated successfully"
+  }
+  ```
+
+### Method 5: REST API (🌐 Teal) - **NEW**
+- **Backend**: Returns pure JSON with structured payment data
+- **Frontend**: JavaScript builds form manually from JSON and submits
+- **Use Case**: Microservices, mobile apps, API integrations
+- **Redirect**: Client-side via JavaScript form building
+- **Response Format**:
+  ```json
+  {
+    "success": true,
+    "orderKey": "TEST-ORDER-xxx",
+    "applicationCode": "3256d54a-9e63-4c7d-b2f9-a2897ec82aab",
+    "amount": 100.00,
+    "gatewayUrl": "https://epp.beta.pa.gov/Payment/Index",
+    "paymentData": "{\"SaleDetailId\":0,...}",
+    "timestamp": "2025-10-02T14:30:00",
+    "instructions": "Submit paymentData to gatewayUrl as 'saleDetail' parameter"
+  }
+  ```
+
+---
+
+## �🏗️ Project Architecture
 
 This application follows **Clean Architecture** with clear separation of concerns:
 
@@ -67,7 +133,7 @@ src/main/java/com/ruc/payments/
 ├── EppIntegrationApplication.java    # Main Spring Boot application
 ├── controller/
 │   ├── PaymentController.java        # EPP payment REST endpoints
-│   └── TestUIController.java         # Test UI endpoints
+│   └── TestUIController.java         # Test UI with 5 integration methods
 ├── service/
 │   ├── PaymentService.java           # Payment business logic interface
 │   ├── EppClient.java                # EPP system integration client
@@ -90,6 +156,12 @@ src/main/java/com/ruc/payments/
 │   └── PaymentProcessingException.java # Custom exception
 └── util/
     └── ModelMapper.java              # Entity/DTO mapping utility
+
+src/main/resources/templates/
+├── test-form-modern.html             # Modern UI with 5 methods (animated)
+├── epp-redirect.html                 # Method 2 template
+├── RucInvoke.html                    # Method 3 template
+└── EpgInvoke.html                    # Alternative template
 
 src/test/java/com/ruc/payments/
 ├── PaymentControllerTest.java        # Controller layer tests

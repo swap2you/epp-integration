@@ -205,7 +205,196 @@ public class RucConfig {
 
 ---
 
-### Step 5: Usage in Your Application
+### Step 5: Choose Your Integration Method
+
+The RUC Payment component now supports **5 distinct integration patterns**. Choose the one that best fits your application architecture:
+
+#### Method 1: Direct Response (Traditional)
+**Best For**: .NET-style integration, legacy systems
+
+```java
+@PostMapping("/payment/initiate")
+public void initiatePayment(@RequestParam Map<String, String> params, 
+                           HttpServletResponse response) throws IOException {
+    // Build payment details
+    SaleDetails saleDetails = buildSaleDetails(params);
+    
+    // Generate EPP form HTML
+    String formHtml = paymentService.buildEppForm(saleDetails);
+    
+    // Write directly to response
+    response.setContentType("text/html");
+    response.getWriter().write(formHtml);
+}
+```
+
+#### Method 2: Template Engine (Spring Boot)
+**Best For**: Spring Boot applications with Thymeleaf
+
+```java
+@PostMapping("/payment/initiate")
+public String initiatePayment(@RequestParam Map<String, String> params, 
+                             Model model) {
+    // Build payment details
+    SaleDetails saleDetails = buildSaleDetails(params);
+    
+    // Generate EPP form HTML
+    String formHtml = paymentService.buildEppForm(saleDetails);
+    
+    // Add to model for template
+    model.addAttribute("launchFormString", formHtml);
+    model.addAttribute("gatewayUrl", eppProperties.getGatewayUrl());
+    
+    // Return template name
+    return "epp-redirect";
+}
+```
+
+**epp-redirect.html**:
+```html
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>Redirecting to Payment Gateway</title></head>
+<body>
+    <div th:utext="${launchFormString}"></div>
+</body>
+</html>
+```
+
+#### Method 3: ModelAndView (Classic MVC)
+**Best For**: Traditional Spring MVC applications
+
+```java
+@PostMapping("/payment/initiate")
+public ModelAndView initiatePayment(@RequestParam Map<String, String> params) {
+    // Build payment details
+    SaleDetails saleDetails = buildSaleDetails(params);
+    
+    // Generate EPP form HTML
+    String formHtml = paymentService.buildEppForm(saleDetails);
+    
+    // Create ModelAndView
+    ModelAndView mav = new ModelAndView("RucInvoke");
+    mav.addObject("launchFormString", formHtml);
+    mav.addObject("gatewayUrl", eppProperties.getGatewayUrl());
+    mav.addObject("orderKey", saleDetails.getOrderKey());
+    
+    return mav;
+}
+```
+
+#### Method 4: AJAX/JSON Response (Modern SPA) 🆕
+**Best For**: React, Angular, Vue.js, Single Page Applications
+
+```java
+@PostMapping("/payment/initiate")
+@ResponseBody
+public Map<String, Object> initiatePayment(@RequestParam Map<String, String> params) {
+    // Build payment details
+    SaleDetails saleDetails = buildSaleDetails(params);
+    
+    // Generate EPP form HTML
+    String formHtml = paymentService.buildEppForm(saleDetails);
+    
+    // Return JSON response
+    Map<String, Object> response = new HashMap<>();
+    response.put("success", true);
+    response.put("orderKey", saleDetails.getOrderKey());
+    response.put("gatewayUrl", eppProperties.getGatewayUrl());
+    response.put("formHtml", formHtml);
+    response.put("message", "Payment form generated successfully");
+    
+    return response;
+}
+```
+
+**Frontend JavaScript**:
+```javascript
+// Make AJAX call
+fetch('/payment/initiate', {
+    method: 'POST',
+    body: formData
+})
+.then(response => response.json())
+.then(data => {
+    if (data.success) {
+        // Inject form HTML and auto-submit
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = data.formHtml;
+        document.body.appendChild(tempDiv);
+        // Form auto-submits via embedded script
+    }
+});
+```
+
+#### Method 5: Pure REST API (Microservices) 🆕
+**Best For**: Microservices, mobile apps, API integrations
+
+```java
+@PostMapping("/payment/initiate")
+@ResponseBody
+public Map<String, Object> initiatePayment(@RequestParam Map<String, String> params) {
+    // Build payment details
+    SaleDetails saleDetails = buildSaleDetails(params);
+    
+    // Convert to JSON string
+    String jsonPayload = objectMapper.writeValueAsString(saleDetails);
+    
+    // Return structured JSON (no HTML)
+    Map<String, Object> response = new HashMap<>();
+    response.put("success", true);
+    response.put("orderKey", saleDetails.getOrderKey());
+    response.put("applicationCode", saleDetails.getApplicationCode());
+    response.put("amount", saleDetails.getTotalAmount());
+    response.put("gatewayUrl", eppProperties.getGatewayUrl());
+    response.put("paymentData", jsonPayload);
+    response.put("timestamp", LocalDateTime.now());
+    response.put("instructions", "Submit paymentData to gatewayUrl as 'saleDetail' parameter");
+    
+    return response;
+}
+```
+
+**Frontend JavaScript**:
+```javascript
+// Make AJAX call
+fetch('/payment/initiate', {
+    method: 'POST',
+    body: formData
+})
+.then(response => response.json())
+.then(data => {
+    if (data.success) {
+        // Build form manually
+        const form = document.createElement('form');
+        form.action = data.gatewayUrl;
+        form.method = 'POST';
+        
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'saleDetail';
+        input.value = data.paymentData;
+        
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    }
+});
+```
+
+**Method Comparison**:
+
+| Method | Response Type | Frontend Complexity | Best Use Case |
+|--------|---------------|---------------------|---------------|
+| 1. Direct Response | HTML | Low | Legacy systems, .NET-style |
+| 2. Template | HTML | Low | Spring Boot + Thymeleaf |
+| 3. ModelAndView | HTML | Low | Classic Spring MVC |
+| 4. AJAX | JSON + HTML | Medium | SPAs, modern JavaScript |
+| 5. REST API | JSON | High | Microservices, mobile apps |
+
+---
+
+### Step 6: Usage in Your Application
 
 #### 5.1 Inject PaymentService
 ```java

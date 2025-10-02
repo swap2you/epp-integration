@@ -651,6 +651,32 @@
     </div>
 
     <script>
+        // Hide loading overlay on page load/back button
+        window.addEventListener('pageshow', function(event) {
+            // This fires when page is shown (including back button navigation)
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            if (loadingOverlay) {
+                loadingOverlay.classList.remove('active');
+            }
+            
+            // Reset main container visibility
+            const container = document.querySelector('.container');
+            if (container) {
+                container.style.display = 'block';
+            }
+            
+            console.log('Page shown - Loading overlay hidden');
+        });
+        
+        // Also hide on initial page load
+        window.addEventListener('DOMContentLoaded', function() {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            if (loadingOverlay) {
+                loadingOverlay.classList.remove('active');
+            }
+            console.log('DOM loaded - Loading overlay hidden');
+        });
+        
         function submitPayment(endpoint) {
             const form = document.getElementById('paymentForm');
             

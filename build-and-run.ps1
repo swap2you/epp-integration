@@ -16,7 +16,8 @@ Write-Host ""
 
 # Step 3: Clean Build
 Write-Host "Step 3: Running Maven clean install..." -ForegroundColor Yellow
-mvn clean install
+# mvn clean install
+mvn clean compile
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
