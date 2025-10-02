@@ -1,116 +1,111 @@
+package com.ruk.payments.service;package com.ruk.payments.service;
 
-package com.ruk.payments.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ruk.payments.config.EppProperties;
-import com.ruk.payments.dto.SaleDetails;
-import com.ruk.payments.entity.EppTransaction;
-import com.ruk.payments.repo.EppTransactionRepository;
-import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.databind.ObjectMapper;import com.fasterxml.jackson.core.JsonProcessingException;
+
+import com.ruk.payments.config.EppProperties;import com.fasterxml.jackson.databind.ObjectMapper;
+
+import com.ruk.payments.dto.SaleDetails;import com.ruk.payments.config.EppProperties;
+
+import com.ruk.payments.entity.EppTransaction;import com.ruk.payments.dto.SaleDetails;
+
+import com.ruk.payments.repo.EppTransactionRepository;import com.ruk.payments.entity.EppTransaction;
+
+import org.springframework.stereotype.Service;import com.ruk.payments.repo.EppTransactionRepository;
+
+import org.springframework.transaction.annotation.Transactional;import org.springframework.stereotype.Service;
+
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.util.Optional;
-
-
 /**
- * EPP (Electronic Payment Platform) Integration Service.
- * 
- * This service handles all direct interactions with the Pennsylvania EPP system:
- * - Generates HTML forms for hosted checkout redirect
- * - Manages transaction persistence and idempotency 
- * - Formats data according to EPP specification requirements
- * - Handles JSON serialization with proper escaping for EPP forms
- * 
- * @see <a href="https://epp.beta.pa.gov">Pennsylvania EPP Documentation</a>
- */
-@Service
-public class EppClient {
-    private final EppProperties eppProperties;
-    private final EppTransactionRepository repo;
+
+ * EPP Integration Service - Clean and Simple/**
+
+ */ * EPP Integration Service - Simplified
+
+@Service */
+
+public class EppClient {@Service
+
+    private final EppProperties eppProperties;public class EppClient {
+
+    private final EppTransactionRepository repo;    private final EppProperties eppProperties;
+
+    private final ObjectMapper objectMapper;    private final EppTransactionRepository repo;
+
     private final ObjectMapper objectMapper;
 
-    /**
-     * Constructor for dependency injection.
-     */
     public EppClient(EppProperties eppProperties, EppTransactionRepository repo, ObjectMapper objectMapper) {
-        this.eppProperties = eppProperties;
-        this.repo = repo;
-        this.objectMapper = objectMapper;
+
+        this.eppProperties = eppProperties;    public EppClient(EppProperties eppProperties, EppTransactionRepository repo, ObjectMapper objectMapper) {
+
+        this.repo = repo;        this.eppProperties = eppProperties;
+
+        this.objectMapper = objectMapper;        this.repo = repo;
+
+    }        this.objectMapper = objectMapper;
+
     }
 
-    /**
-     * Builds an auto-submitting HTML form for EPP hosted checkout.
-     * Uses Rahul's proven JavaScript form submission approach.
-     *
-     * @param saleDetails Sale details payload
-     * @return HTML form as String
-     */
     public String buildHostedCheckoutForm(SaleDetails saleDetails) {
-        String json;
-        try {
-            json = objectMapper.writeValueAsString(saleDetails);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize SaleDetails", e);
-        }
-        // Pluggable encryption stub (TBD)
-        String encryptedPayload = json; // TODO: replace with encryption logic
 
-        // Use Rahul's proven JavaScript form submission approach
-        StringBuilder sb = new StringBuilder();
-        sb
-        //   .append("<html><body>")
-          .append("<form id='__PostForm' name='__PostForm' action='").append(eppProperties.getPaymentGatewayIndexUrl()).append("' method='POST'>")
-          .append("<input type='hidden' name='saleDetail' value='").append((encryptedPayload)).append("'/>")
-          .append("</form>")
-          .append("<script language='javascript'>var v__PostForm=document.__PostForm;v__PostForm.submit();</script>")
-        //   .append("</body></html>")
+        try {    public String buildHostedCheckoutForm(SaleDetails saleDetails) {
+
+            EppTransaction transaction = persistTransaction(saleDetails);        String json;
+
+            String jsonPayload = objectMapper.writeValueAsString(saleDetails);        try {
+
+                        json = objectMapper.writeValueAsString(saleDetails);
+
+            StringBuilder sb = new StringBuilder();        } catch (JsonProcessingException e) {
+
+            sb.append("<form id='__PostForm' name='__PostForm' action='")            throw new RuntimeException("Failed to serialize SaleDetails", e);
+
+              .append(eppProperties.getPaymentGatewayIndexUrl())        }
+
+              .append("' method='POST'>")        // Pluggable encryption stub (TBD)
+
+              .append("<input type='hidden' name='saleDetail' value='")        String encryptedPayload = json; // TODO: replace with encryption logic
+
+              .append(jsonPayload.replace("\"", "&quot;"))
+
+              .append("'/>")        // Use Rahul's proven JavaScript form submission approach
+
+              .append("</form>")        StringBuilder sb = new StringBuilder();
+
+              .append("<script>document.__PostForm.submit();</script>");        sb
+
+                    //   .append("<html><body>")
+
+            return sb.toString();          .append("<form id='__PostForm' name='__PostForm' action='").append(eppProperties.getPaymentGatewayIndexUrl()).append("' method='POST'>")
+
+        } catch (Exception e) {          .append("<input type='hidden' name='saleDetail' value='").append((encryptedPayload)).append("'/>")
+
+            throw new RuntimeException("Failed to build EPP form", e);          .append("</form>")
+
+        }          .append("<script language='javascript'>var v__PostForm=document.__PostForm;v__PostForm.submit();</script>")
+
+    }        //   .append("</body></html>")
+
         ;
-        return sb.toString();
-    }
 
-    /**
-     * Escapes HTML special characters for safe embedding in HTML.
-     * For EPP integration, formats JSON exactly as required by Commerce Hub.
-     * Returns JSON wrapped in quotes with internal quotes escaped.
-     */
-    private String escapeHtml(String s) {
-        // For EPP integration, wrap the entire JSON in quotes and escape internal quotes
-        // This matches Rahul's serialized format exactly
-        String escapedJson = s.replace("\"", "\\\"");
-        return "\"" + escapedJson + "\"";
-    }
+    @Transactional        return sb.toString();
 
-    /**
-     * Idempotent upsert for EPP transaction.
-     *
-     * @param orderKey Order key
-     * @param applicationUniqueId Application unique ID
-     * @param status Transaction status
-     * @param amount Transaction amount
-     * @param email Payer email
-     * @param rawRequest Raw request JSON
-     * @param rawResponse Raw response JSON
-     * @param authCode Authorization code
-     * @param referenceNo Reference number
-     * @return Upserted EppTransaction
-     */
-    @Transactional
-    public EppTransaction upsertTransaction(String orderKey, String applicationUniqueId, String status,
-                                            BigDecimal amount, String email, String rawRequest, String rawResponse,
-                                            String authCode, String referenceNo) {
-        Optional<EppTransaction> existing = repo.findByOrderKeyAndApplicationUniqueId(orderKey, applicationUniqueId);
-        EppTransaction tx = existing.orElseGet(EppTransaction::new);
-        tx.setOrderKey(orderKey);
-        tx.setApplicationUniqueId(applicationUniqueId);
-        tx.setStatus(status);
-        tx.setAmount(amount);
-        tx.setEmail(email);
-        tx.setRawRequest(rawRequest);
-        tx.setRawResponse(rawResponse);
-        tx.setAuthCode(authCode);
-        tx.setReferenceNo(referenceNo);
-        return repo.save(tx);
+    private EppTransaction persistTransaction(SaleDetails saleDetails) {    }
+
+        return repo.findByOrderKey(saleDetails.getOrderKey())
+
+                .orElseGet(() -> {}
+
+                    EppTransaction transaction = new EppTransaction();
+                    transaction.setApplicationCode(saleDetails.getApplicationCode());
+                    transaction.setOrderKey(saleDetails.getOrderKey());
+                    transaction.setAmount(saleDetails.getTotalAmount());
+                    transaction.setCustomerName(saleDetails.getFirstName() + " " + saleDetails.getLastName());
+                    transaction.setCustomerEmail(saleDetails.getEmail());
+                    transaction.setStatus("PENDING");
+                    return repo.save(transaction);
+                });
     }
 }

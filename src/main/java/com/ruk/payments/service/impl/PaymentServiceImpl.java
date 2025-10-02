@@ -1,67 +1,103 @@
-package com.ruk.payments.service.impl;
+package com.ruk.payments.service.impl;package com.ruk.payments.service.impl;package com.ruk.payments.service.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ruk.payments.config.EppProperties;
+
+
 import com.ruk.payments.dto.ApplicationResponse;
-import com.ruk.payments.dto.EppResponse;
-import com.ruk.payments.dto.SaleDetails;
-import com.ruk.payments.entity.EppTransaction;
-import com.ruk.payments.exception.PaymentProcessingException;
-import com.ruk.payments.service.EppClient;
-import com.ruk.payments.service.PaymentService;
-import com.ruk.payments.service.TransactionService;
-import com.ruk.payments.util.ModelMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Implementation of PaymentService that handles EPP payment processing.
- * 
- * This service contains all business logic for payment operations,
- * including validation, conversion, and transaction management.
- */
+import com.ruk.payments.dto.EppResponse;
+
+import com.ruk.payments.dto.SaleDetails;import com.ruk.payments.dto.ApplicationResponse;import com.ruk.payments.dto.ApplicationResponse;
+
+import com.ruk.payments.service.EppClient;
+
+import com.ruk.payments.service.PaymentService;import com.ruk.payments.dto.EppResponse;import com.ruk.payments.dto.EppResponse;
+
+import org.springframework.stereotype.Service;
+
+import com.ruk.payments.dto.SaleDetails;import com.ruk.payments.dto.SaleDetails;
+
 @Service
-@Transactional
-public class PaymentServiceImpl implements PaymentService {
+
+public class PaymentServiceImpl implements PaymentService {import com.ruk.payments.service.EppClient;import com.ruk.payments.service.EppClient;
+
     
-    private static final Logger logger = LoggerFactory.getLogger(PaymentServiceImpl.class);
+
+    private final EppClient eppClient;import com.ruk.payments.service.PaymentService;import com.ruk.payments.service.PaymentService;
+
     
-    private final EppClient eppClient;
-    private final TransactionService transactionService;
-    private final ObjectMapper objectMapper;
-    private final ModelMapper modelMapper;
-    private final EppProperties eppProperties;
-    
-    public PaymentServiceImpl(
-            EppClient eppClient,
-            TransactionService transactionService,
-            ObjectMapper objectMapper,
-            ModelMapper modelMapper,
-            EppProperties eppProperties) {
+
+    public PaymentServiceImpl(EppClient eppClient) {import org.springframework.stereotype.Service;import org.springframework.stereotype.Service;
+
         this.eppClient = eppClient;
-        this.transactionService = transactionService;
-        this.objectMapper = objectMapper;
-        this.modelMapper = modelMapper;
-        this.eppProperties = eppProperties;
+
     }
+
     
-    @Override
+
+    @Override/**/**
+
     public String initiatePayment(SaleDetails saleDetails) {
-        logger.info("Initiating payment for orderKey: {}, applicationUniqueId: {}", 
-                   saleDetails.getOrderKey(), saleDetails.getApplicationUniqueId());
+
+        return eppClient.buildHostedCheckoutForm(saleDetails); * EPP Payment Service Implementation - Clean and Simple * EPP Payment Service Implementation - Clean and Simple
+
+    }
+
+     */ */
+
+    @Override
+
+    public ApplicationResponse processCallback(EppResponse eppResponse) {@Service@Service
+
+        ApplicationResponse response = new ApplicationResponse();
+
+        response.setSuccess("COM".equals(eppResponse.getStatus()));public class PaymentServiceImpl implements PaymentService {public class PaymentServiceImpl implements PaymentService {
+
+        response.setMessage(eppResponse.getStatus());
+
+        response.setOrderKey(eppResponse.getOrderKey());        
+
+        return response;
+
+    }    private final EppClient eppClient;    private final EppClient eppClient;
+
+}
         
-        validateEppEnabled();
-        validatePaymentRequest(saleDetails);
+
+    public PaymentServiceImpl(EppClient eppClient) {    public PaymentServiceImpl(EppClient eppClient) {
+
+        this.eppClient = eppClient;        this.eppClient = eppClient;
+
+    }    }
+
         
-        // applicationUniqueId is optional per Commerce Hub requirements
-        // Only set if specifically requested (legacy compatibility)
-        if (saleDetails.getApplicationUniqueId() != null && 
-            (saleDetails.getApplicationUniqueId().equals("CHANGE_ME") ||
-             saleDetails.getApplicationUniqueId().equals("RUC_APP_CODE_FROM_EPP"))) {
-            String appCode = eppProperties.getApplicationCode() != null ? 
+
+    @Override    @Override
+
+    public String initiatePayment(SaleDetails saleDetails) {    public String initiatePayment(SaleDetails saleDetails) {
+
+        return eppClient.buildHostedCheckoutForm(saleDetails);        logger.info("Initiating payment for orderKey: {}, applicationUniqueId: {}", 
+
+    }                   saleDetails.getOrderKey(), saleDetails.getApplicationUniqueId());
+
+            
+
+    @Override        validateEppEnabled();
+
+    public ApplicationResponse processCallback(EppResponse eppResponse) {        validatePaymentRequest(saleDetails);
+
+        ApplicationResponse response = new ApplicationResponse();        
+
+        response.setSuccess("COM".equals(eppResponse.getStatus()));        // applicationUniqueId is optional per Commerce Hub requirements
+
+        response.setMessage(eppResponse.getStatus());        // Only set if specifically requested (legacy compatibility)
+
+        response.setOrderKey(eppResponse.getOrderKey());        if (saleDetails.getApplicationUniqueId() != null && 
+
+        return response;            (saleDetails.getApplicationUniqueId().equals("CHANGE_ME") ||
+
+    }             saleDetails.getApplicationUniqueId().equals("RUC_APP_CODE_FROM_EPP"))) {
+
+}            String appCode = eppProperties.getApplicationCode() != null ? 
                            eppProperties.getApplicationCode() : eppProperties.getAppCode();
             saleDetails.setApplicationUniqueId(appCode);
             logger.info("Set applicationUniqueId to configured RUC app code: {}", appCode);
