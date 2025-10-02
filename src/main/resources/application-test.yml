@@ -1,4 +1,7 @@
 # Test profile for H2 database
+server:
+  port: 8081  # Changed from default 8080 to avoid port conflicts
+
 spring:
   flyway:
     locations: classpath:db/migration/h2

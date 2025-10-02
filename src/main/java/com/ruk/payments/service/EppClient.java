@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruk.payments.config.EppProperties;
 import com.ruk.payments.dto.SaleDetails;
 import com.ruk.payments.entity.EppTransaction;
+import com.ruk.payments.exception.PaymentProcessingException;
 import com.ruk.payments.repo.EppTransactionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,34 +53,41 @@ public class EppClient {
         try {
             json = objectMapper.writeValueAsString(saleDetails);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize SaleDetails", e);
+            throw new PaymentProcessingException("JSON_SERIALIZATION_FAILED", 
+                "Failed to serialize SaleDetails to JSON", e);
         }
         // Pluggable encryption stub (TBD)
         String encryptedPayload = json; // TODO: replace with encryption logic
+        
+        // Properly escape JSON for HTML embedding
+        String escapedJson = escapeHtml(encryptedPayload);
 
         // Use Rahul's proven JavaScript form submission approach
         StringBuilder sb = new StringBuilder();
-        sb
-        //   .append("<html><body>")
-          .append("<form id='__PostForm' name='__PostForm' action='").append(eppProperties.getPaymentGatewayIndexUrl()).append("' method='POST'>")
-          .append("<input type='hidden' name='saleDetail' value='").append((encryptedPayload)).append("'/>")
+        sb.append("<form id='__PostForm' name='__PostForm' action='")
+          .append(eppProperties.getPaymentGatewayIndexUrl())
+          .append("' method='POST'>")
+          .append("<input type='hidden' name='saleDetail' value='")
+          .append(escapedJson)
+          .append("'/>")
           .append("</form>")
-          .append("<script language='javascript'>var v__PostForm=document.__PostForm;v__PostForm.submit();</script>")
-        //   .append("</body></html>")
-        ;
+          .append("<script language='javascript'>var v__PostForm=document.__PostForm;v__PostForm.submit();</script>");
         return sb.toString();
     }
 
     /**
      * Escapes HTML special characters for safe embedding in HTML.
-     * For EPP integration, formats JSON exactly as required by Commerce Hub.
-     * Returns JSON wrapped in quotes with internal quotes escaped.
+     * Properly escapes JSON for EPP Commerce Hub requirements.
      */
-    private String escapeHtml(String s) {
-        // For EPP integration, wrap the entire JSON in quotes and escape internal quotes
-        // This matches Rahul's serialized format exactly
-        String escapedJson = s.replace("\"", "\\\"");
-        return "\"" + escapedJson + "\"";
+    private String escapeHtml(String input) {
+        if (input == null) return "";
+        
+        return input
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;");
     }
 
     /**
