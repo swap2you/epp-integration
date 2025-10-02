@@ -11,12 +11,15 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import com.ruk.payments.service.EppClient;
+import com.ruk.payments.service.PaymentService;
 import com.ruk.payments.repo.EppTransactionRepository;
 import com.ruk.payments.config.EppProperties;
 
 import java.math.BigDecimal;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -26,6 +29,9 @@ public class PaymentControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @MockBean
+    private PaymentService paymentService;
+    
     @MockBean
     private EppClient eppClient;
 
@@ -40,6 +46,13 @@ public class PaymentControllerTest {
 
     @Test
     void start_returnsHtmlForm() throws Exception {
+        // Mock PaymentService to return HTML form
+        String expectedHtml = "<form id='__PostForm' name='__PostForm' action='http://test.epp.url' method='POST'>" +
+                "<input type='hidden' name='saleDetail' value='test-json'/>" +
+                "</form>" +
+                "<script language='javascript'>var v__PostForm=document.__PostForm;v__PostForm.submit();</script>";
+        when(paymentService.initiatePayment(any(SaleDetails.class))).thenReturn(expectedHtml);
+        
         SaleItems item = new SaleItems();
         item.setSaleItemId(1);
         item.setCount(1);

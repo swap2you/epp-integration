@@ -1,143 +1,68 @@
-package com.ruk.payments.service.impl;package com.ruk.payments.service.impl;package com.ruk.payments.service.impl;
+package com.ruk.payments.service.impl;
 
-
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ruk.payments.config.EppProperties;
 import com.ruk.payments.dto.ApplicationResponse;
-
 import com.ruk.payments.dto.EppResponse;
-
-import com.ruk.payments.dto.SaleDetails;import com.ruk.payments.dto.ApplicationResponse;import com.ruk.payments.dto.ApplicationResponse;
-
+import com.ruk.payments.dto.SaleDetails;
+import com.ruk.payments.entity.EppTransaction;
+import com.ruk.payments.exception.PaymentProcessingException;
 import com.ruk.payments.service.EppClient;
-
-import com.ruk.payments.service.PaymentService;import com.ruk.payments.dto.EppResponse;import com.ruk.payments.dto.EppResponse;
-
+import com.ruk.payments.service.PaymentService;
+import com.ruk.payments.service.TransactionService;
+import com.ruk.payments.util.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.ruk.payments.dto.SaleDetails;import com.ruk.payments.dto.SaleDetails;
-
+/**
+ * Implementation of PaymentService that handles EPP payment processing.
+ * 
+ * This service contains all business logic for payment operations,
+ * including validation, conversion, and transaction management.
+ */
 @Service
-
-public class PaymentServiceImpl implements PaymentService {import com.ruk.payments.service.EppClient;import com.ruk.payments.service.EppClient;
-
+@Transactional
+public class PaymentServiceImpl implements PaymentService {
     
-
-    private final EppClient eppClient;import com.ruk.payments.service.PaymentService;import com.ruk.payments.service.PaymentService;
-
+    private static final Logger logger = LoggerFactory.getLogger(PaymentServiceImpl.class);
     
-
-    public PaymentServiceImpl(EppClient eppClient) {import org.springframework.stereotype.Service;import org.springframework.stereotype.Service;
-
+    private final EppClient eppClient;
+    private final TransactionService transactionService;
+    private final ObjectMapper objectMapper;
+    private final ModelMapper modelMapper;
+    private final EppProperties eppProperties;
+    
+    public PaymentServiceImpl(
+            EppClient eppClient,
+            TransactionService transactionService,
+            ObjectMapper objectMapper,
+            ModelMapper modelMapper,
+            EppProperties eppProperties) {
         this.eppClient = eppClient;
-
+        this.transactionService = transactionService;
+        this.objectMapper = objectMapper;
+        this.modelMapper = modelMapper;
+        this.eppProperties = eppProperties;
     }
-
     
-
-    @Override/**/**
-
-    public String initiatePayment(SaleDetails saleDetails) {
-
-        return eppClient.buildHostedCheckoutForm(saleDetails); * EPP Payment Service Implementation - Clean and Simple * EPP Payment Service Implementation - Clean and Simple
-
-    }
-
-     */ */
-
     @Override
-
-    public ApplicationResponse processCallback(EppResponse eppResponse) {@Service@Service
-
-        ApplicationResponse response = new ApplicationResponse();
-
-        response.setSuccess("COM".equals(eppResponse.getStatus()));public class PaymentServiceImpl implements PaymentService {public class PaymentServiceImpl implements PaymentService {
-
-        response.setMessage(eppResponse.getStatus());
-
-        response.setOrderKey(eppResponse.getOrderKey());        
-
-        return response;
-
-    }    private final EppClient eppClient;    private final EppClient eppClient;
-
-}
+    public String initiatePayment(SaleDetails saleDetails) {
+        logger.info("Initiating payment for orderKey: {}, applicationUniqueId: {}", 
+                   saleDetails.getOrderKey(), saleDetails.getApplicationUniqueId());
         
-
-    public PaymentServiceImpl(EppClient eppClient) {    public PaymentServiceImpl(EppClient eppClient) {
-
-        this.eppClient = eppClient;        this.eppClient = eppClient;
-
-    }    }
-
+        validateEppEnabled();
+        validatePaymentRequest(saleDetails);
         
-
-    @Override    @Override
-
-    public String initiatePayment(SaleDetails saleDetails) {    public String initiatePayment(SaleDetails saleDetails) {
-
-        return eppClient.buildHostedCheckoutForm(saleDetails);        logger.info("Initiating payment for orderKey: {}, applicationUniqueId: {}", 
-
-    }                   saleDetails.getOrderKey(), saleDetails.getApplicationUniqueId());
-
-            
-
-    @Override        validateEppEnabled();
-
-    public ApplicationResponse processCallback(EppResponse eppResponse) {        validatePaymentRequest(saleDetails);
-
-        ApplicationResponse response = new ApplicationResponse();        
-
-        response.setSuccess("COM".equals(eppResponse.getStatus()));        // applicationUniqueId is optional per Commerce Hub requirements
-
-        response.setMessage(eppResponse.getStatus());        // Only set if specifically requested (legacy compatibility)
-
-        response.setOrderKey(eppResponse.getOrderKey());        if (saleDetails.getApplicationUniqueId() != null && 
-
-        return response;            (saleDetails.getApplicationUniqueId().equals("CHANGE_ME") ||
-
-    }             saleDetails.getApplicationUniqueId().equals("RUC_APP_CODE_FROM_EPP"))) {
-
-}            String appCode = eppProperties.getApplicationCode() != null ? 
-                           eppProperties.getApplicationCode() : eppProperties.getAppCode();
-            saleDetails.setApplicationUniqueId(appCode);
-            logger.info("Set applicationUniqueId to configured RUC app code: {}", appCode);
-        }
-        
-        // Set applicationCode if not provided
-        if (saleDetails.getApplicationCode() == null || saleDetails.getApplicationCode().trim().isEmpty()) {
-            String appCode = eppProperties.getApplicationCode() != null ? 
-                           eppProperties.getApplicationCode() : eppProperties.getAppCode();
-            saleDetails.setApplicationCode(appCode);
-            logger.info("Set applicationCode to configured RUC app code: {}", appCode);
-        }
-        
-        // Set itemKey equal to orderKey per Commerce Hub requirements
-        if (saleDetails.getItems() != null) {
-            saleDetails.getItems().forEach(item -> {
-                if (item.getItemKey() == null || item.getItemKey().trim().isEmpty()) {
-                    item.setItemKey(saleDetails.getOrderKey());
-                    logger.debug("Set itemKey to orderKey: {} for item: {}", 
-                               saleDetails.getOrderKey(), item.getDescription());
-                }
-            });
-        }
+        // Prepare sale details with proper codes and item keys
+        prepareSaleDetails(saleDetails);
         
         try {
-            // Convert to JSON for storage (commented out since transactionService is not implemented)
-            // String rawRequest = objectMapper.writeValueAsString(saleDetails);
-            
-            // Create/update transaction record
-            // EppTransaction transaction = transactionService.createOrUpdateTransaction(
-            //         saleDetails.getOrderKey(),
-            //         saleDetails.getApplicationUniqueId(),
-            //         "APP", // Initial status
-            //         saleDetails.getTotalAmount(),
-            //         saleDetails.getEmail(),
-            //         rawRequest,
-            //         null, // No response yet
-            //         null, // No auth code yet
-            //         null  // No reference number yet
-            // );
+            // Convert to JSON and handle transaction
+            String rawRequest = objectMapper.writeValueAsString(saleDetails);
+            handleInitialTransaction(saleDetails, rawRequest);
             
             // Generate hosted checkout form
             String checkoutForm = eppClient.buildHostedCheckoutForm(saleDetails);
@@ -145,10 +70,17 @@ public class PaymentServiceImpl implements PaymentService {import com.ruk.paymen
             logger.info("Payment initiated successfully for orderKey: {}", saleDetails.getOrderKey());
             return checkoutForm;
             
+        } catch (JsonProcessingException e) {
+            String errorMsg = String.format("Failed to serialize payment request for orderKey: %s", saleDetails.getOrderKey());
+            logger.error(errorMsg, e);
+            throw new PaymentProcessingException("SERIALIZATION_ERROR", errorMsg, e);
+        } catch (PaymentProcessingException e) {
+            // Re-throw payment processing exceptions as-is
+            throw e;
         } catch (Exception e) {
-            logger.error("Payment initiation failed for orderKey: {}", saleDetails.getOrderKey(), e);
-            throw new PaymentProcessingException("PAYMENT_INITIATION_FAILED", 
-                "Failed to initiate payment", e);
+            String errorMsg = String.format("Payment initiation failed for orderKey: %s", saleDetails.getOrderKey());
+            logger.error(errorMsg, e);
+            throw new PaymentProcessingException("PAYMENT_INITIATION_FAILED", errorMsg, e);
         }
     }
     
@@ -161,46 +93,31 @@ public class PaymentServiceImpl implements PaymentService {import com.ruk.paymen
         validateCallbackRequest(eppResponse);
         
         try {
-            // Convert to JSON for storage
+            // Convert to JSON and process transaction
             String rawResponse = objectMapper.writeValueAsString(eppResponse);
+            EppTransaction updatedTransaction = processCallbackTransaction(eppResponse, rawResponse);
             
-            // Find existing transaction to get amount and email
-            EppTransaction existingTransaction = transactionService.findTransaction(
-                    eppResponse.getOrderKey(), 
-                    eppResponse.getApplicationUniqueId());
-            
-            // Update transaction with callback data
-            EppTransaction updatedTransaction = transactionService.createOrUpdateTransaction(
-                    eppResponse.getOrderKey(),
-                    eppResponse.getApplicationUniqueId(),
-                    eppResponse.getStatus(),
-                    existingTransaction != null ? existingTransaction.getAmount() : null,
-                    existingTransaction != null ? existingTransaction.getEmail() : null,
-                    existingTransaction != null ? existingTransaction.getRawRequest() : null,
-                    rawResponse,
-                    eppResponse.getAuthCode(),
-                    eppResponse.getReferenceNo()
-            );
-            
-            // Convert to response model
-            ApplicationResponse response = modelMapper.toApplicationResponse(updatedTransaction);
+            // Create response
+            ApplicationResponse response = createCallbackResponse(eppResponse, updatedTransaction);
             response.setMessage("Payment callback processed successfully");
             
             logger.info("Callback processed successfully for orderKey: {}", eppResponse.getOrderKey());
             return response;
             
         } catch (JsonProcessingException e) {
-            logger.error("Failed to serialize callback response for orderKey: {}", eppResponse.getOrderKey(), e);
-            throw new PaymentProcessingException("SERIALIZATION_ERROR", 
-                "Failed to process callback response", e);
+            String errorMsg = String.format("Failed to serialize callback response for orderKey: %s", eppResponse.getOrderKey());
+            logger.error(errorMsg, e);
+            throw new PaymentProcessingException("SERIALIZATION_ERROR", errorMsg, e);
+        } catch (PaymentProcessingException e) {
+            // Re-throw payment processing exceptions as-is
+            throw e;
         } catch (Exception e) {
-            logger.error("Callback processing failed for orderKey: {}", eppResponse.getOrderKey(), e);
-            throw new PaymentProcessingException("CALLBACK_PROCESSING_FAILED", 
-                "Failed to process payment callback", e);
+            String errorMsg = String.format("Callback processing failed for orderKey: %s", eppResponse.getOrderKey());
+            logger.error(errorMsg, e);
+            throw new PaymentProcessingException("CALLBACK_PROCESSING_FAILED", errorMsg, e);
         }
     }
     
-    @Override
     public boolean isEppEnabled() {
         return "epp".equalsIgnoreCase(eppProperties.getProvider());
     }
@@ -248,5 +165,130 @@ public class PaymentServiceImpl implements PaymentService {import com.ruk.paymen
         }
         
         logger.debug("Callback request validation passed for orderKey: {}", eppResponse.getOrderKey());
+    }
+    
+    /**
+     * Prepares sale details with proper application codes and item keys.
+     */
+    private void prepareSaleDetails(SaleDetails saleDetails) {
+        // applicationUniqueId is optional per Commerce Hub requirements
+        // Only set if specifically requested (legacy compatibility)
+        if (saleDetails.getApplicationUniqueId() != null && 
+            (saleDetails.getApplicationUniqueId().equals("CHANGE_ME") ||
+             saleDetails.getApplicationUniqueId().equals("RUC_APP_CODE_FROM_EPP"))) {
+            String appCode = getConfiguredAppCode();
+            saleDetails.setApplicationUniqueId(appCode);
+            logger.info("Set applicationUniqueId to configured RUC app code: {}", appCode);
+        }
+        
+        // Set applicationCode if not provided
+        if (saleDetails.getApplicationCode() == null || saleDetails.getApplicationCode().trim().isEmpty()) {
+            String appCode = getConfiguredAppCode();
+            saleDetails.setApplicationCode(appCode);
+            logger.info("Set applicationCode to configured RUC app code: {}", appCode);
+        }
+        
+        // Set itemKey equal to orderKey per Commerce Hub requirements
+        if (saleDetails.getItems() != null) {
+            saleDetails.getItems().forEach(item -> {
+                if (item.getItemKey() == null || item.getItemKey().trim().isEmpty()) {
+                    item.setItemKey(saleDetails.getOrderKey());
+                    logger.debug("Set itemKey to orderKey: {} for item: {}", 
+                               saleDetails.getOrderKey(), item.getDescription());
+                }
+            });
+        }
+    }
+    
+    /**
+     * Gets the configured application code from properties.
+     */
+    private String getConfiguredAppCode() {
+        return eppProperties.getApplicationCode() != null ? 
+               eppProperties.getApplicationCode() : eppProperties.getAppCode();
+    }
+    
+    /**
+     * Handles initial transaction creation/update.
+     */
+    private void handleInitialTransaction(SaleDetails saleDetails, String rawRequest) {
+        if (transactionService != null) {
+            EppTransaction transaction = transactionService.createOrUpdateTransaction(
+                    saleDetails.getOrderKey(),
+                    saleDetails.getApplicationUniqueId(),
+                    "APP", // Initial status
+                    saleDetails.getTotalAmount(),
+                    saleDetails.getEmail(),
+                    rawRequest,
+                    null, // No response yet
+                    null, // No auth code yet
+                    null  // No reference number yet
+            );
+            logger.debug("Transaction record created/updated: {}", transaction.getId());
+        } else {
+            logger.warn("TransactionService is null - transaction will not be persisted");
+        }
+    }
+    
+    /**
+     * Processes callback transaction update.
+     */
+    private EppTransaction processCallbackTransaction(EppResponse eppResponse, String rawResponse) {
+        if (transactionService == null) {
+            logger.warn("TransactionService is null - cannot retrieve existing transaction");
+            return null;
+        }
+        
+        EppTransaction existingTransaction = findExistingTransaction(eppResponse);
+        
+        EppTransaction updatedTransaction = transactionService.createOrUpdateTransaction(
+                eppResponse.getOrderKey(),
+                eppResponse.getApplicationUniqueId(),
+                eppResponse.getStatus(),
+                existingTransaction != null ? existingTransaction.getAmount() : null,
+                existingTransaction != null ? existingTransaction.getEmail() : null,
+                existingTransaction != null ? existingTransaction.getRawRequest() : null,
+                rawResponse,
+                eppResponse.getAuthCode(),
+                eppResponse.getReferenceNo()
+        );
+        
+        logger.debug("Transaction updated with callback data: {}", updatedTransaction.getId());
+        return updatedTransaction;
+    }
+    
+    /**
+     * Finds existing transaction safely.
+     */
+    private EppTransaction findExistingTransaction(EppResponse eppResponse) {
+        try {
+            return transactionService.findTransaction(
+                    eppResponse.getOrderKey(), 
+                    eppResponse.getApplicationUniqueId());
+        } catch (Exception e) {
+            logger.warn("Failed to find existing transaction for orderKey: {}, continuing with callback processing", 
+                      eppResponse.getOrderKey(), e);
+            return null;
+        }
+    }
+    
+    /**
+     * Creates callback response from transaction or fallback.
+     */
+    private ApplicationResponse createCallbackResponse(EppResponse eppResponse, EppTransaction updatedTransaction) {
+        if (updatedTransaction != null && modelMapper != null) {
+            return modelMapper.toApplicationResponse(updatedTransaction);
+        }
+        
+        // Fallback response when transaction service is unavailable
+        ApplicationResponse response = new ApplicationResponse();
+        response.setOrderKey(eppResponse.getOrderKey());
+        response.setApplicationUniqueId(eppResponse.getApplicationUniqueId());
+        response.setStatus(eppResponse.getStatus());
+        // Note: ApplicationResponse may not have setAuthCode/setReferenceNo methods
+        // These fields might be handled differently in the DTO structure
+        
+        logger.warn("Created fallback response due to missing transaction service or model mapper");
+        return response;
     }
 }
