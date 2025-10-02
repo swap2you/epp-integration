@@ -624,7 +624,7 @@
                         <!-- Method 4: AJAX/JSON -->
                         <div class="method-card" onclick="submitPayment('/test/method4-ajax')">
                             <div class="method-icon">🔄</div>
-                            <div class="method-title">AJAX Response</div>
+                            <div class="method-title">AJAX Response***</div>
                             <div class="method-description">
                                 Asynchronous JSON response with client-side form injection. Modern SPA approach.
                             </div>
@@ -712,6 +712,9 @@
             // Convert to URL-encoded format
             const urlEncodedData = new URLSearchParams(formData).toString();
             
+            console.log(`Making AJAX request to: ${endpoint}`);
+            console.log('Form data:', urlEncodedData);
+            
             // Make AJAX request
             fetch(endpoint, {
                 method: 'POST',
@@ -720,34 +723,58 @@
                 },
                 body: urlEncodedData
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
-                console.log('Response from server:', data);
+                console.log('✅ Response from server:', data);
                 
                 if (data.success) {
                     if (endpoint === '/test/method4-ajax') {
                         // Method 4: Inject the form HTML and auto-submit
-                        console.log('Method 4: Injecting EPP form HTML...');
+                        console.log('🔄 Method 4: Processing AJAX response...');
+                        console.log('Gateway URL:', data.gatewayUrl);
+                        console.log('Order Key:', data.orderKey);
                         
-                        // Create a temporary container
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = data.formHtml;
+                        // Parse the HTML to extract form and script
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(data.formHtml, 'text/html');
                         
-                        // Hide main content
-                        document.querySelector('.container').style.display = 'none';
+                        // Find the form
+                        const eppForm = doc.querySelector('form');
                         
-                        // Append form to body
-                        document.body.appendChild(tempDiv);
-                        
-                        // The form should auto-submit via its embedded script
-                        console.log('EPP form injected and should auto-submit to:', data.gatewayUrl);
+                        if (eppForm) {
+                            console.log('✅ Form found in response, preparing submission...');
+                            
+                            // Hide main content
+                            document.querySelector('.container').style.display = 'none';
+                            
+                            // Append form to body
+                            document.body.appendChild(eppForm);
+                            
+                            console.log('📤 Submitting form to EPP gateway...');
+                            console.log('Form action:', eppForm.action);
+                            console.log('Form method:', eppForm.method);
+                            
+                            // Submit the form immediately
+                            eppForm.submit();
+                        } else {
+                            console.error('❌ Form not found in response HTML');
+                            console.log('Response HTML:', data.formHtml);
+                            document.getElementById('loadingOverlay').classList.remove('active');
+                            alert('Error: Form not found in server response. Check console for details.');
+                        }
                         
                     } else if (endpoint === '/test/method5-rest') {
                         // Method 5: Build form manually from REST data
-                        console.log('Method 5: Building EPP form from REST API data...');
-                        
-                        // Parse the paymentData JSON string
-                        const paymentData = JSON.parse(data.paymentData);
+                        console.log('🌐 Method 5: Building form from REST API data...');
+                        console.log('Gateway URL:', data.gatewayUrl);
+                        console.log('Order Key:', data.orderKey);
+                        console.log('Amount:', data.amount);
                         
                         // Create form element
                         const eppForm = document.createElement('form');
@@ -764,6 +791,11 @@
                         
                         eppForm.appendChild(hiddenInput);
                         
+                        console.log('✅ Form built successfully');
+                        console.log('Form action:', eppForm.action);
+                        console.log('Form method:', eppForm.method);
+                        console.log('Payment data length:', data.paymentData.length, 'chars');
+                        
                         // Hide main content
                         document.querySelector('.container').style.display = 'none';
                         
@@ -771,19 +803,21 @@
                         document.body.appendChild(eppForm);
                         
                         // Submit the form
-                        console.log('Submitting EPP form to:', data.gatewayUrl);
+                        console.log('📤 Submitting form to EPP gateway...');
                         eppForm.submit();
                     }
                 } else {
                     // Hide loading and show error
+                    console.error('❌ Server returned success=false');
                     document.getElementById('loadingOverlay').classList.remove('active');
                     alert('Payment processing failed: ' + (data.message || 'Unknown error'));
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
+                console.error('❌ AJAX request failed:', error);
+                console.error('Error details:', error.message);
                 document.getElementById('loadingOverlay').classList.remove('active');
-                alert('An error occurred while processing your payment. Please try again.');
+                alert('An error occurred while processing your payment. Please try again.\n\nError: ' + error.message);
             });
         }
         
